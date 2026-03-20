@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FleetTrack — Gestión de Camión</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #f5a623;
+    --accent2: #3d8bff;
+    --danger: #ff4d4d;
+    --success: #2ecc71;
+    --text: #e8eaf0;
+    --muted: #7a8099;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--accent);
+  }
+  .topbar-logo span { color: var(--text); }
+  .topbar-date {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+  .topbar-date strong { display: block; color: var(--text); font-size: 13px; }
+
+  /* CONTENT */
+  .content { padding: 16px; padding-bottom: 100px; }
+
+  /* SECTION HEADER */
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 24px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* STATUS CARD */
+  .status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .stat-item { }
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-value.blue { color: var(--accent2); }
+  .stat-value.green { color: var(--success); }
+  .stat-value small { font-size: 14px; font-weight: 400; color: var(--muted); }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .card-header {
+    background: var(--surface2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .card-icon.orange { background: rgba(245,166,35,0.15); }
+  .card-icon.blue   { background: rgba(61,139,255,0.15); }
+  .card-icon.green  { background: rgba(46,204,113,0.15); }
+  .card-icon.red    { background: rgba(255,77,77,0.15); }
+  .card-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+  }
+  .card-body { padding: 14px 16px; }
+
+  /* FORM ELEMENTS */
+  .form-row { margin-bottom: 12px; }
+  .form-row label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  input, select, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 16px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+  select option { background: var(--surface); }
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #111; }
+  .btn-primary:hover { background: #ffb84d; }
+  .btn-blue { background: var(--accent2); color: #fff; }
+  .btn-green { background: var(--success); color: #111; }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 14px;
+    padding: 9px;
+    margin-top: 8px;
+  }
+  .btn-sm {
+    width: auto;
+    padding: 7px 14px;
+    font-size: 13px;
+    margin-top: 0;
+  }
+  .btn-danger { background: var(--danger); color: #fff; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 200;
+  }
+  .nav-item {
+    flex: 1;
+    padding: 10px 4px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    color: var(--muted);
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-item span { font-size: 20px; }
+  .nav-item p {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* TAG / BADGE */
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge-orange { background: rgba(245,166,35,0.2); color: var(--accent); }
+  .badge-green  { background: rgba(46,204,113,0.2); color: var(--success); }
+  .badge-blue   { background: rgba(61,139,255,0.2); color: var(--accent2); }
+  .badge-red    { background: rgba(255,77,77,0.2); color: var(--danger); }
+
+  /* LIST ITEMS */
+  .list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-item-left { display: flex; align-items: center; gap: 10px; }
+  .list-item-icon {
+    width: 38px;
+    height: 38px;
+    background: var(--surface2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+  .list-item-name { font-weight: 600; font-size: 15px; }
+  .list-item-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .list-item-right { text-align: right; }
+  .list-item-value {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: var(--success);
+    color: #111;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    z-index: 999;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--danger); color: #fff; }
+
+  /* CONFIG BANNER */
+  .config-banner {
+    background: rgba(245,166,35,0.1);
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--accent);
+  }
+  .config-banner strong { display: block; font-size: 14px; margin-bottom: 4px; }
+  .config-banner code {
+    background: rgba(0,0,0,0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    word-break: break-all;
+    display: block;
+    margin-top: 6px;
+    color: #fff;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 14px;
+    gap: 4px;
+  }
+  .tab {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--border);
+  }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* PROGRESS BAR */
+  .progress-bar-bg {
+    background: var(--surface2);
+    border-radius: 10px;
+    height: 8px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: var(--accent);
+    transition: width 0.5s ease;
+  }
+
+  /* SHEETS INDICATOR */
+  .sheets-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .sheets-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--danger);
+    flex-shrink: 0;
+  }
+  .sheets-dot.connected { background: var(--success); animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .km-display {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--accent);
+    text-align: center;
+    padding: 10px 0;
+    letter-spacing: 1px;
+  }
+  .km-display span { font-size: 18px; color: var(--muted); font-weight: 400; }
+
+  .empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">FLEET<span>TRACK</span></div>
+  <div class="topbar-date" id="topDate">
+    <strong id="dateStr"></strong>
+    <span id="timeStr"></span>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ========== SCREEN: HOME ========== -->
+<div class="screen active" id="screen-home">
+  <div class="content">
+
+    <div class="section-title">📊 Resumen del Día</div>
+    <div class="status-card">
+      <div class="stat-item">
+        <div class="stat-label">KM Recorridos</div>
+        <div class="stat-value" id="stat-km">— <small>km</small></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Combustible</div>
+        <div class="stat-value blue" id="stat-fuel">— <small>gal</small></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Entregas</div>
+        <div class="stat-value green" id="stat-deliveries">0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Cargas</div>
+        <div class="stat-value" id="stat-loads">0</div>
+      </div>
+    </div>
+
+    <div class="sheets-indicator" style="margin-bottom:16px">
+      <div class="sheets-dot" id="sheetsStatusDot"></div>
+      <span id="sheetsStatusText">No conectado a Google Sheets</span>
+    </div>
+
+    <!-- KM DEL DÍA -->
+    <div class="section-title">🛣️ Kilometraje</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon orange">🚛</div>
+        <div class="card-title">KM Inicial / Final del Día</div>
+      </div>
+      <div class="card-body">
+        <div class="input-row">
+          <div class="form-row">
+            <label>KM Inicial</label>
+            <input type="number" id="kmInicial" placeholder="0" inputmode="numeric">
+          </div>
+          <div class="form-row">
+            <label>KM Final</label>
+            <input type="number" id="kmFinal" placeholder="0" inputmode="numeric">
+          </div>
+        </div>
+        <div id="kmCalc" style="text-align:center; color:var(--muted); font-size:13px; margin-bottom:10px"></div>
+        <button class="btn btn-primary" onclick="saveKM()">💾 Guardar KM del Día</button>
+      </div>
+    </div>
+
+    <!-- COMBUSTIBLE -->
+    <div class="section-title">⛽ Combustible</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">⛽</div>
+        <div class="card-title">Registro de Carga</div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>Estación / Proveedor</label>
+          <input type="text" id="fuelStation" placeholder="Ej: Shell Km 47">
+        </div>
+        <div class="input-row">
+          <div class="form-row">
+            <label>Galones</label>
+            <input type="number" id="fuelGallons" placeholder="0.0" step="0.1" inputmode="decimal">
+          </div>
+          <div class="form-row">
+            <label>Costo Total ($)</label>
+            <input type="number" id="fuelCost" placeholder="0.00" step="0.01" inputmode="decimal">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>KM al momento</label>
+          <input type="number" id="fuelKM" placeholder="Odómetro actual" inputmode="numeric">
+        </div>
+        <button class="btn btn-blue" onclick="saveFuel()">⛽ Registrar Combustible</button>
+      </div>
+    </div>
+
+    <!-- PUNTOS DE CARGA -->
+    <div class="section-title">📦 Punto de Carga</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon green">🏭</div>
+        <div class="card-title">Registro de Carga</div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>Lugar de Carga (Origen)</label>
+          <select id="loadPlace" onchange="onLoadPlaceChange()">
+            <option value="">— Seleccionar —</option>
+            <option value="Nejapa">🏭 Nejapa</option>
+            <option value="Yobel Utila">🏭 Yobel Utila</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div id="loadOtroRow" class="form-row" style="display:none">
+          <label>Especificar lugar</label>
+          <input type="text" id="loadOtro" placeholder="Nombre del lugar">
+        </div>
+        <div class="input-row">
+          <div class="form-row">
+            <label>Peso Cargado (ton)</label>
+            <input type="number" id="loadWeight" placeholder="0.0" step="0.1" max="10" inputmode="decimal">
+          </div>
+          <div class="form-row">
+            <label>Hora de Carga</label>
+            <input type="time" id="loadTime">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Tipo de Mercancía</label>
+          <input type="text" id="loadCargo" placeholder="Ej: Cemento, Granos, etc.">
+        </div>
+        <button class="btn btn-green" onclick="saveLoad()">📦 Registrar Carga</button>
+      </div>
+    </div>
+
+    <!-- ENTREGA -->
+    <div class="section-title">🎯 Punto de Entrega</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon red">🎯</div>
+        <div class="card-title">Registro de Entrega</div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>Ruta / Destino</label>
+          <select id="deliveryRoute" onchange="onRouteChange()">
+            <option value="">— Seleccionar ruta —</option>
+            <optgroup label="📍 Nejapa" id="optgroup-Nejapa">
+              <option value="Nejapa – Vidrí Constitución">Vidrí Constitución</option>
+              <option value="Nejapa – Vidrí Venezuela">Vidrí Venezuela</option>
+              <option value="Nejapa – Vidrí San Benito">Vidrí San Benito</option>
+              <option value="Nejapa – Vidrí Escalón">Vidrí Escalón</option>
+              <option value="Nejapa – Vidrí Mejicanos">Vidrí Mejicanos</option>
+              <option value="Nejapa – Vidrí Soyapango">Vidrí Soyapango</option>
+              <option value="Nejapa – Vidrí Las Piletas">Vidrí Las Piletas</option>
+              <option value="Nejapa – Vidrí Santa Tecla">Vidrí Santa Tecla</option>
+              <option value="Nejapa – Vidrí Sonsonate">Vidrí Sonsonate</option>
+              <option value="Nejapa – Vidrí Santa Ana">Vidrí Santa Ana</option>
+              <option value="Nejapa – Vidrí Santa Ana Bypass">Vidrí Santa Ana Bypass</option>
+              <option value="Nejapa – Vidrí San Miguel">Vidrí San Miguel</option>
+              <option value="Nejapa – Vidrí SS Centro">Vidrí SS Centro</option>
+              <option value="Nejapa – Vidrí Quezaltepeque">Vidrí Quezaltepeque</option>
+              <option value="Nejapa – Vidrí Ejército">Vidrí Ejército</option>
+              <option value="Nejapa – Vidrí Miguelito">Vidrí Miguelito</option>
+              <option value="Nejapa – Vidrí Soyapango Espíritu Santo">Vidrí Soyapango Espíritu Santo</option>
+              <option value="Nejapa – Vidrí San Miguel Panamericana">Vidrí San Miguel Panamericana</option>
+              <option value="Nejapa – Vidrí Lourdes">Vidrí Lourdes</option>
+            </optgroup>
+            <optgroup label="📍 Yobel Utila" id="optgroup-Utila">
+              <option value="Utila – Vidrí Constitución">Vidrí Constitución</option>
+              <option value="Utila – Vidrí Venezuela">Vidrí Venezuela</option>
+              <option value="Utila – Vidrí San Benito">Vidrí San Benito</option>
+              <option value="Utila – Vidrí Escalón">Vidrí Escalón</option>
+              <option value="Utila – Vidrí Mejicanos">Vidrí Mejicanos</option>
+              <option value="Utila – Vidrí Soyapango">Vidrí Soyapango</option>
+              <option value="Utila – Vidrí Las Piletas">Vidrí Las Piletas</option>
+              <option value="Utila – Vidrí Santa Tecla">Vidrí Santa Tecla</option>
+              <option value="Utila – Vidrí Sonsonate">Vidrí Sonsonate</option>
+              <option value="Utila – Vidrí Santa Ana">Vidrí Santa Ana</option>
+              <option value="Utila – Vidrí Santa Ana Bypass">Vidrí Santa Ana Bypass</option>
+              <option value="Utila – Vidrí San Miguel">Vidrí San Miguel</option>
+              <option value="Utila – Vidrí San Miguel Panamericana">Vidrí San Miguel Panamericana</option>
+              <option value="Utila – Vidrí SS Centro">Vidrí SS Centro</option>
+              <option value="Utila – Vidrí Ejército">Vidrí Ejército</option>
+              <option value="Utila – Vidrí Miguelito">Vidrí Miguelito</option>
+              <option value="Utila – Vidrí Soyapango Espíritu Santo">Vidrí Soyapango Espíritu Santo</option>
+              <option value="Utila – Vidrí Lourdes">Vidrí Lourdes</option>
+              <option value="Utila – Vidrí Quezaltepeque">Vidrí Quezaltepeque</option>
+            </optgroup>
+            <option value="Otro">Otro destino</option>
+          </select>
+        </div>
+
+        <!-- Auto-filled route info -->
+        <div id="routeInfoCard" style="display:none; background:var(--surface2); border-radius:10px; padding:12px; margin-bottom:12px; border:1px solid var(--border)">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:3px">KM Ida/Vuelta</div>
+              <div id="routeKM" style="font-family:'Barlow Condensed'; font-size:26px; font-weight:700; color:var(--accent2)">—</div>
+            </div>
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:3px">Tarifa</div>
+              <div id="routeTariff" style="font-family:'Barlow Condensed'; font-size:26px; font-weight:700; color:var(--success)">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="deliveryOtroRow" class="form-row" style="display:none">
+          <label>Especificar destino</label>
+          <input type="text" id="deliveryOtro" placeholder="Nombre del destino">
+        </div>
+
+        <div class="input-row">
+          <div class="form-row">
+            <label>Hora Llegada</label>
+            <input type="time" id="deliveryArrival">
+          </div>
+          <div class="form-row">
+            <label>Hora Salida</label>
+            <input type="time" id="deliveryDeparture">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Estado</label>
+          <select id="deliveryStatus">
+            <option value="Entregado">✅ Entregado</option>
+            <option value="Parcial">⚠️ Entrega Parcial</option>
+            <option value="Fallido">❌ No Entregado</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Observaciones</label>
+          <input type="text" id="deliveryNotes" placeholder="(Opcional)">
+        </div>
+        <button class="btn btn-danger" onclick="saveDelivery()">🎯 Registrar Entrega</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== SCREEN: HISTORIAL ========== -->
+<div class="screen" id="screen-history">
+  <div class="content">
+    <div class="section-title">📋 Historial del Día</div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(this,'tab-km')">KM</button>
+      <button class="tab" onclick="switchTab(this,'tab-fuel')">Combustible</button>
+      <button class="tab" onclick="switchTab(this,'tab-loads')">Cargas</button>
+      <button class="tab" onclick="switchTab(this,'tab-deliveries')">Entregas</button>
+    </div>
+    <div id="tab-km">
+      <div id="history-km"><div class="empty-state"><div class="icon">🛣️</div>Sin registros de KM hoy</div></div>
+    </div>
+    <div id="tab-fuel" style="display:none">
+      <div id="history-fuel"><div class="empty-state"><div class="icon">⛽</div>Sin cargas de combustible hoy</div></div>
+    </div>
+    <div id="tab-loads" style="display:none">
+      <div id="history-loads"><div class="empty-state"><div class="icon">📦</div>Sin cargas registradas hoy</div></div>
+    </div>
+    <div id="tab-deliveries" style="display:none">
+      <div id="history-deliveries"><div class="empty-state"><div class="icon">🎯</div>Sin entregas registradas hoy</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCREEN: CONFIGURACIÓN ========== -->
+<div class="screen" id="screen-config">
+  <div class="content">
+    <div class="section-title">⚙️ Configuración</div>
+
+    <div class="config-banner">
+      <strong>📊 Google Sheets — Cómo conectar</strong>
+      1. Abre Google Sheets y crea una hoja.<br>
+      2. En <em>Extensiones → Apps Script</em>, pega el código del script.<br>
+      3. Despliega como Web App (acceso: Cualquiera).<br>
+      4. Copia la URL y pégala abajo.
+      <code>Ver instrucciones completas en el botón de abajo</code>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon orange">📊</div>
+        <div class="card-title">Google Sheets URL</div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>URL del Web App (Apps Script)</label>
+          <input type="url" id="sheetsURL" placeholder="https://script.google.com/macros/s/...">
+        </div>
+        <button class="btn btn-primary" onclick="saveConfig()">💾 Guardar Configuración</button>
+        <button class="btn btn-outline" onclick="testConnection()">🔌 Probar Conexión</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-header">
+        <div class="card-icon blue">🚛</div>
+        <div class="card-title">Datos del Vehículo</div>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label>Placa del Camión</label>
+          <input type="text" id="truckPlate" placeholder="Ej: P-12345">
+        </div>
+        <div class="form-row">
+          <label>Nombre del Transportista</label>
+          <input type="text" id="driverName" placeholder="Nombre completo">
+        </div>
+        <div class="form-row">
+          <label>Capacidad Máx. (ton)</label>
+          <input type="number" id="truckCapacity" value="10" placeholder="10">
+        </div>
+        <button class="btn btn-blue" onclick="saveVehicle()">💾 Guardar Vehículo</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-header">
+        <div class="card-icon green">🏭</div>
+        <div class="card-title">Lugares de Carga Frecuentes</div>
+      </div>
+      <div class="card-body">
+        <div id="loadPlacesList"></div>
+        <div class="input-row" style="margin-top:8px">
+          <input type="text" id="newLoadPlace" placeholder="Nuevo lugar de carga">
+          <button class="btn btn-green btn-sm" onclick="addLoadPlace()" style="margin-top:0">+ Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-header">
+        <div class="card-icon red">📋</div>
+        <div class="card-title">Apps Script — Código</div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px; color:var(--muted); margin-bottom:10px">Copia este código en tu Google Apps Script:</p>
+        <div style="background:var(--bg); border-radius:8px; padding:12px; font-size:11px; font-family:monospace; color:#adf; overflow-x:auto; white-space:pre; border:1px solid var(--border)" id="scriptCode"></div>
+        <button class="btn btn-outline" onclick="copyScript()" style="margin-top:10px">📋 Copiar Script</button>
+      </div>
+    </div>
+
+    <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px">
+      FleetTrack v1.0 · Gestión de Flota<br>
+      Camión 10 Toneladas
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="showScreen('home', this)">
+    <span>🏠</span><p>Inicio</p>
+  </button>
+  <button class="nav-item" onclick="showScreen('history', this)">
+    <span>📋</span><p>Historial</p>
+  </button>
+  <button class="nav-item" onclick="showScreen('config', this)">
+    <span>⚙️</span><p>Config</p>
+  </button>
+</nav>
+
+<script>
+// ============================================================
+// TABLA DE RUTAS POR ORIGEN
+// ============================================================
+const ROUTES_BY_ORIGIN = {
+  'Nejapa': {
+    'Nejapa – Vidrí Constitución':             { km: 30,    tariff: 95.92 },
+    'Nejapa – Vidrí Venezuela':                { km: 28,    tariff: 95.92 },
+    'Nejapa – Vidrí San Benito':               { km: 26,    tariff: 95.92 },
+    'Nejapa – Vidrí Escalón':                  { km: 30,    tariff: 102.46 },
+    'Nejapa – Vidrí Mejicanos':                { km: 22,    tariff: 88.29 },
+    'Nejapa – Vidrí Soyapango':                { km: 40,    tariff: 115.54 },
+    'Nejapa – Vidrí Las Piletas':              { km: 42,    tariff: 117.72 },
+    'Nejapa – Vidrí Santa Tecla':              { km: 38,    tariff: 115.54 },
+    'Nejapa – Vidrí Sonsonate':                { km: 120,   tariff: 174.40 },
+    'Nejapa – Vidrí Santa Ana':                { km: 140,   tariff: 196.20 },
+    'Nejapa – Vidrí Santa Ana Bypass':         { km: 150,   tariff: 218.00 },
+    'Nejapa – Vidrí San Miguel':               { km: 280,   tariff: 305.20 },
+    'Nejapa – Vidrí SS Centro':                { km: 36,    tariff: 109.00 },
+    'Nejapa – Vidrí Quezaltepeque':            { km: 20,    tariff: 81.75 },
+    'Nejapa – Vidrí Ejército':                 { km: 36,    tariff: 109.00 },
+    'Nejapa – Vidrí Miguelito':                { km: 26,    tariff: 95.92 },
+    'Nejapa – Vidrí Soyapango Espíritu Santo': { km: 50.4,  tariff: 128.62 },
+    'Nejapa – Vidrí San Miguel Panamericana':  { km: 280,   tariff: 305.20 },
+    'Nejapa – Vidrí Lourdes':                  { km: 44,    tariff: 119.90 },
+  },
+  'Yobel Utila': {
+    'Utila – Vidrí Constitución':             { km: 36,   tariff: 100 },
+    'Utila – Vidrí Venezuela':                { km: 34,   tariff: 92  },
+    'Utila – Vidrí San Benito':               { km: 10,   tariff: 85  },
+    'Utila – Vidrí Escalón':                  { km: 12,   tariff: 85  },
+    'Utila – Vidrí Mejicanos':                { km: 30,   tariff: 95  },
+    'Utila – Vidrí Soyapango':                { km: 50,   tariff: 115 },
+    'Utila – Vidrí Las Piletas':              { km: 8,    tariff: 60  },
+    'Utila – Vidrí Santa Tecla':              { km: 6,    tariff: 60  },
+    'Utila – Vidrí Sonsonate':                { km: 110,  tariff: 150 },
+    'Utila – Vidrí Santa Ana':                { km: 130,  tariff: 170 },
+    'Utila – Vidrí Santa Ana Bypass':         { km: 140,  tariff: 190 },
+    'Utila – Vidrí San Miguel':               { km: 290,  tariff: 300 },
+    'Utila – Vidrí San Miguel Panamericana':  { km: 290,  tariff: 300 },
+    'Utila – Vidrí SS Centro':                { km: 40,   tariff: 110 },
+    'Utila – Vidrí Ejército':                 { km: 42,   tariff: 115 },
+    'Utila – Vidrí Miguelito':                { km: 28,   tariff: 98  },
+    'Utila – Vidrí Soyapango Espíritu Santo': { km: 52,   tariff: 130 },
+    'Utila – Vidrí Lourdes':                  { km: 20,   tariff: 95  },
+    'Utila – Vidrí Quezaltepeque':            { km: 18,   tariff: 105 },
+  }
+};
+
+// Lookup plano para búsqueda rápida por nombre de ruta
+const ROUTES = Object.assign({}, ...Object.values(ROUTES_BY_ORIGIN));
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  sheets_url: '',
+  driver: { plate: '', name: '', capacity: 10 },
+  loadPlaces: ['Nejapa', 'Yobel Utila'],
+  records: { km: null, fuel: [], loads: [], deliveries: [] }
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('fleettrack_state');
+    if (s) state = { ...state, ...JSON.parse(s) };
+    // Reset daily records if new day
+    const today = new Date().toDateString();
+    const saved = localStorage.getItem('fleettrack_date');
+    if (saved !== today) {
+      state.records = { km: null, fuel: [], loads: [], deliveries: [] };
+      localStorage.setItem('fleettrack_date', today);
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  localStorage.setItem('fleettrack_state', JSON.stringify(state));
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'history') renderHistory();
+  if (name === 'config') renderConfig();
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 2800);
+}
+
+function switchTab(btn, tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  ['tab-km','tab-fuel','tab-loads','tab-deliveries'].forEach(id => {
+    document.getElementById(id).style.display = id === tabId ? 'block' : 'none';
+  });
+}
+
+function updateTopDate() {
+  const now = new Date();
+  document.getElementById('dateStr').textContent = now.toLocaleDateString('es-SV', { weekday:'short', day:'numeric', month:'short' }).toUpperCase();
+  document.getElementById('timeStr').textContent = now.toLocaleTimeString('es-SV', { hour:'2-digit', minute:'2-digit' });
+}
+
+function updateStats() {
+  const km = state.records.km;
+  document.getElementById('stat-km').innerHTML = km
+    ? `${km.final - km.initial} <small>km</small>`
+    : `— <small>km</small>`;
+  const totalFuel = state.records.fuel.reduce((a,b) => a + parseFloat(b.gallons||0), 0);
+  document.getElementById('stat-fuel').innerHTML = totalFuel > 0
+    ? `${totalFuel.toFixed(1)} <small>gal</small>`
+    : `— <small>gal</small>`;
+  document.getElementById('stat-deliveries').textContent = state.records.deliveries.length;
+  document.getElementById('stat-loads').textContent = state.records.loads.length;
+}
+
+function updateSheetsStatus() {
+  const dot = document.getElementById('sheetsStatusDot');
+  const txt = document.getElementById('sheetsStatusText');
+  if (state.sheets_url) {
+    dot.classList.add('connected');
+    txt.textContent = 'Conectado a Google Sheets ✓';
+  } else {
+    dot.classList.remove('connected');
+    txt.textContent = 'No conectado a Google Sheets';
+  }
+}
+
+// ============================================================
+// KM
+// ============================================================
+document.getElementById('kmInicial').addEventListener('input', calcKM);
+document.getElementById('kmFinal').addEventListener('input', calcKM);
+
+function calcKM() {
+  const ini = parseFloat(document.getElementById('kmInicial').value) || 0;
+  const fin = parseFloat(document.getElementById('kmFinal').value) || 0;
+  const div = document.getElementById('kmCalc');
+  if (ini > 0 && fin > ini) {
+    div.innerHTML = `<span style="color:var(--accent); font-family:'Barlow Condensed'; font-size:22px; font-weight:700">${fin-ini} km recorridos</span>`;
+  } else if (ini > 0 && fin > 0 && fin <= ini) {
+    div.innerHTML = `<span style="color:var(--danger)">⚠ KM final debe ser mayor al inicial</span>`;
+  } else { div.innerHTML = ''; }
+}
+
+async function saveKM() {
+  const ini = parseFloat(document.getElementById('kmInicial').value);
+  const fin = parseFloat(document.getElementById('kmFinal').value);
+  if (!ini || !fin) return showToast('Completa ambos campos de KM', true);
+  if (fin <= ini) return showToast('KM final debe ser mayor al inicial', true);
+
+  const record = {
+    type: 'km',
+    date: new Date().toLocaleDateString('es-SV'),
+    time: new Date().toLocaleTimeString('es-SV'),
+    plate: state.driver.plate,
+    driver: state.driver.name,
+    initial: ini,
+    final: fin,
+    total: fin - ini
+  };
+  state.records.km = record;
+  saveState();
+  updateStats();
+  await sendToSheets(record);
+  showToast(`✅ KM guardados — ${fin-ini} km del día`);
+}
+
+// ============================================================
+// COMBUSTIBLE
+// ============================================================
+async function saveFuel() {
+  const station = document.getElementById('fuelStation').value.trim();
+  const gallons = parseFloat(document.getElementById('fuelGallons').value);
+  const cost = parseFloat(document.getElementById('fuelCost').value);
+  const km = document.getElementById('fuelKM').value;
+  if (!station || !gallons) return showToast('Completa estación y galones', true);
+
+  const record = {
+    type: 'fuel',
+    date: new Date().toLocaleDateString('es-SV'),
+    time: new Date().toLocaleTimeString('es-SV'),
+    plate: state.driver.plate,
+    driver: state.driver.name,
+    station, gallons, cost: cost || 0, km: km || '',
+    pricePerGallon: gallons > 0 && cost > 0 ? (cost/gallons).toFixed(2) : ''
+  };
+  state.records.fuel.push(record);
+  saveState();
+  updateStats();
+  await sendToSheets(record);
+  // Clear
+  ['fuelStation','fuelGallons','fuelCost','fuelKM'].forEach(id => document.getElementById(id).value = '');
+  showToast(`⛽ ${gallons} gal registrados`);
+}
+
+// ============================================================
+// CARGA
+// ============================================================
+function onLoadPlaceChange() {
+  const val = document.getElementById('loadPlace').value;
+  document.getElementById('loadOtroRow').style.display = val === 'Otro' ? 'block' : 'none';
+
+  // Filtrar rutas de entrega según origen seleccionado
+  const nejapa = document.getElementById('optgroup-Nejapa');
+  const utila  = document.getElementById('optgroup-Utila');
+  if (!nejapa || !utila) return;
+
+  if (val === 'Nejapa') {
+    nejapa.style.display = '';
+    utila.style.display  = 'none';
+  } else if (val === 'Yobel Utila') {
+    nejapa.style.display = 'none';
+    utila.style.display  = '';
+  } else {
+    nejapa.style.display = '';
+    utila.style.display  = '';
+  }
+  // Reset ruta seleccionada al cambiar origen
+  document.getElementById('deliveryRoute').value = '';
+  document.getElementById('routeInfoCard').style.display = 'none';
+}
+
+async function saveLoad() {
+  let place = document.getElementById('loadPlace').value;
+  if (place === 'Otro') place = document.getElementById('loadOtro').value.trim();
+  const weight = parseFloat(document.getElementById('loadWeight').value);
+  const time = document.getElementById('loadTime').value;
+  const cargo = document.getElementById('loadCargo').value.trim();
+  if (!place) return showToast('Selecciona un lugar de carga', true);
+  if (!weight) return showToast('Ingresa el peso cargado', true);
+  if (weight > parseFloat(state.driver.capacity || 10)) return showToast(`⚠ Excede capacidad máxima (${state.driver.capacity || 10} ton)`, true);
+
+  const record = {
+    type: 'load',
+    date: new Date().toLocaleDateString('es-SV'),
+    time: time || new Date().toLocaleTimeString('es-SV'),
+    plate: state.driver.plate,
+    driver: state.driver.name,
+    place, weight, cargo
+  };
+  state.records.loads.push(record);
+  saveState();
+  updateStats();
+  await sendToSheets(record);
+  ['loadWeight','loadCargo','loadTime'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('loadPlace').value = '';
+  showToast(`📦 Carga registrada — ${weight} ton`);
+}
+
+// ============================================================
+// ENTREGA — con rutas y auto-relleno
+// ============================================================
+function onRouteChange() {
+  const sel = document.getElementById('deliveryRoute').value;
+  const card = document.getElementById('routeInfoCard');
+  const otroRow = document.getElementById('deliveryOtroRow');
+
+  if (sel && sel !== 'Otro' && ROUTES[sel]) {
+    const r = ROUTES[sel];
+    document.getElementById('routeKM').textContent = r.km + ' km';
+    document.getElementById('routeTariff').textContent = '$ ' + r.tariff.toFixed(2);
+    card.style.display = 'block';
+    otroRow.style.display = 'none';
+  } else if (sel === 'Otro') {
+    card.style.display = 'none';
+    otroRow.style.display = 'block';
+  } else {
+    card.style.display = 'none';
+    otroRow.style.display = 'none';
+  }
+}
+
+async function saveDelivery() {
+  let route = document.getElementById('deliveryRoute').value;
+  if (!route) return showToast('Selecciona una ruta de entrega', true);
+  if (route === 'Otro') {
+    route = document.getElementById('deliveryOtro').value.trim();
+    if (!route) return showToast('Especifica el destino', true);
+  }
+
+  const routeData = ROUTES[route] || { km: '', tariff: '' };
+  const arrival   = document.getElementById('deliveryArrival').value;
+  const departure = document.getElementById('deliveryDeparture').value;
+  const status    = document.getElementById('deliveryStatus').value;
+  const notes     = document.getElementById('deliveryNotes').value.trim();
+
+  const record = {
+    type: 'delivery',
+    date: new Date().toLocaleDateString('es-SV'),
+    time: new Date().toLocaleTimeString('es-SV'),
+    plate: state.driver.plate,
+    driver: state.driver.name,
+    route,
+    km: routeData.km,
+    tariff: routeData.tariff,
+    arrival, departure, status, notes
+  };
+  state.records.deliveries.push(record);
+  saveState();
+  updateStats();
+  await sendToSheets(record);
+
+  document.getElementById('deliveryRoute').value = '';
+  document.getElementById('routeInfoCard').style.display = 'none';
+  document.getElementById('deliveryOtroRow').style.display = 'none';
+  ['deliveryArrival','deliveryDeparture','deliveryNotes','deliveryOtro'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('deliveryStatus').value = 'Entregado';
+  const icon = status === 'Entregado' ? '✅' : status === 'Parcial' ? '⚠️' : '❌';
+  showToast(`${icon} Entrega — ${route.replace('Nejapa – ','')}`);
+}
+
+// ============================================================
+// GOOGLE SHEETS
+// ============================================================
+async function sendToSheets(record) {
+  if (!state.sheets_url) return;
+  try {
+    const res = await fetch(state.sheets_url, {
+      method: 'POST',
+      body: JSON.stringify(record),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    const txt = await res.text();
+    if (txt.includes('OK')) {
+      console.log('✅ Sent to Sheets:', record.type);
+    }
+  } catch(e) {
+    console.warn('Sheets send failed:', e);
+  }
+}
+
+async function testConnection() {
+  const url = document.getElementById('sheetsURL').value.trim();
+  if (!url) return showToast('Ingresa primero la URL', true);
+  showToast('🔌 Probando conexión...');
+  try {
+    const res = await fetch(url + '?test=1');
+    const txt = await res.text();
+    if (txt.includes('FleetTrack')) {
+      showToast('✅ Conexión exitosa con Sheets');
+    } else {
+      showToast('⚠ Respuesta inesperada del script', true);
+    }
+  } catch(e) {
+    showToast('❌ No se pudo conectar', true);
+  }
+}
+
+// ============================================================
+// CONFIG
+// ============================================================
+function saveConfig() {
+  state.sheets_url = document.getElementById('sheetsURL').value.trim();
+  saveState();
+  updateSheetsStatus();
+  showToast('✅ Configuración guardada');
+}
+
+function saveVehicle() {
+  state.driver.plate = document.getElementById('truckPlate').value.trim();
+  state.driver.name = document.getElementById('driverName').value.trim();
+  state.driver.capacity = parseFloat(document.getElementById('truckCapacity').value) || 10;
+  saveState();
+  showToast('✅ Datos del vehículo guardados');
+}
+
+function addLoadPlace() {
+  const val = document.getElementById('newLoadPlace').value.trim();
+  if (!val) return;
+  if (!state.loadPlaces.includes(val)) {
+    state.loadPlaces.push(val);
+    saveState();
+    renderLoadPlaces();
+    updateLoadPlacesSelect();
+    document.getElementById('newLoadPlace').value = '';
+    showToast('✅ Lugar agregado');
+  }
+}
+
+function renderLoadPlaces() {
+  const el = document.getElementById('loadPlacesList');
+  if (!el) return;
+  el.innerHTML = state.loadPlaces.map((p,i) =>
+    `<div class="list-item">
+      <div class="list-item-left"><div class="list-item-icon">🏭</div><div class="list-item-name">${p}</div></div>
+      <button onclick="removeLoadPlace(${i})" style="background:none;border:none;color:var(--danger);font-size:18px;cursor:pointer">✕</button>
+    </div>`
+  ).join('');
+}
+
+function removeLoadPlace(i) {
+  state.loadPlaces.splice(i, 1);
+  saveState();
+  renderLoadPlaces();
+  updateLoadPlacesSelect();
+}
+
+function updateLoadPlacesSelect() {
+  const sel = document.getElementById('loadPlace');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+    '<option value="Nejapa">🏭 Nejapa</option>' +
+    '<option value="Yobel Utila">🏭 Yobel Utila</option>' +
+    '<option value="Otro">Otro</option>';
+}
+
+function renderConfig() {
+  const urlInput = document.getElementById('sheetsURL');
+  const plateInput = document.getElementById('truckPlate');
+  const nameInput = document.getElementById('driverName');
+  const capInput = document.getElementById('truckCapacity');
+  if (urlInput) urlInput.value = state.sheets_url || '';
+  if (plateInput) plateInput.value = state.driver.plate || '';
+  if (nameInput) nameInput.value = state.driver.name || '';
+  if (capInput) capInput.value = state.driver.capacity || 10;
+  renderLoadPlaces();
+
+  // Script code
+  const script = `// FleetTrack — Apps Script para Google Sheets
+// Pega este código en Extensions > Apps Script
+
+function doPost(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const data = JSON.parse(e.postData.contents);
+  
+  let sheet;
+  if (data.type === 'km') sheet = getOrCreate(ss, 'KM_Diario');
+  else if (data.type === 'fuel') sheet = getOrCreate(ss, 'Combustible');
+  else if (data.type === 'load') sheet = getOrCreate(ss, 'Cargas');
+  else if (data.type === 'delivery') sheet = getOrCreate(ss, 'Entregas');
+  
+  if (sheet.getLastRow() === 0) addHeaders(sheet, data);
+  
+  const row = Object.values(data);
+  sheet.appendRow(row);
+  
+  return ContentService.createTextOutput('OK').setMimeType(
+    ContentService.MimeType.TEXT);
+}
+
+function doGet(e) {
+  if (e.parameter.test) {
+    return ContentService.createTextOutput('FleetTrack OK');
+  }
+}
+
+function getOrCreate(ss, name) {
+  return ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+function addHeaders(sheet, data) {
+  sheet.appendRow(Object.keys(data));
+  sheet.getRange(1, 1, 1, Object.keys(data).length)
+    .setBackground('#F5A623')
+    .setFontWeight('bold');
+}`;
+  const el = document.getElementById('scriptCode');
+  if (el) el.textContent = script;
+}
+
+function copyScript() {
+  const text = document.getElementById('scriptCode').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('📋 Script copiado'));
+}
+
+// ============================================================
+// HISTORY
+// ============================================================
+function renderHistory() {
+  // KM
+  const km = state.records.km;
+  document.getElementById('history-km').innerHTML = km
+    ? `<div class="card"><div class="card-body">
+        <div class="km-display">${km.final - km.initial} <span>km</span></div>
+        <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:8px">
+          <span>Inicial: <strong style="color:var(--text)">${km.initial}</strong></span>
+          <span>Final: <strong style="color:var(--text)">${km.final}</strong></span>
+        </div>
+        <div style="color:var(--muted);font-size:12px;margin-top:8px">Registrado: ${km.date} ${km.time}</div>
+      </div></div>`
+    : '<div class="empty-state"><div class="icon">🛣️</div>Sin registros de KM hoy</div>';
+
+  // FUEL
+  document.getElementById('history-fuel').innerHTML = state.records.fuel.length
+    ? state.records.fuel.map(f => `
+        <div class="card" style="margin-bottom:8px"><div class="card-body">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="list-item-name">⛽ ${f.station}</div>
+            <div class="stat-value blue" style="font-size:24px">${f.gallons} <small>gal</small></div>
+          </div>
+          <div style="color:var(--muted);font-size:12px;margin-top:6px">
+            $${f.cost} · ${f.pricePerGallon ? '$'+f.pricePerGallon+'/gal · ' : ''}KM: ${f.km || '—'} · ${f.time}
+          </div>
+        </div></div>`).join('')
+    : '<div class="empty-state"><div class="icon">⛽</div>Sin cargas de combustible hoy</div>';
+
+  // LOADS
+  document.getElementById('history-loads').innerHTML = state.records.loads.length
+    ? state.records.loads.map(l => `
+        <div class="card" style="margin-bottom:8px"><div class="card-body">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="list-item-name">🏭 ${l.place}</div>
+            <div class="stat-value green" style="font-size:24px">${l.weight} <small>ton</small></div>
+          </div>
+          <div style="color:var(--muted);font-size:12px;margin-top:6px">${l.cargo || 'Sin descripción'} · ${l.time}</div>
+        </div></div>`).join('')
+    : '<div class="empty-state"><div class="icon">📦</div>Sin cargas registradas hoy</div>';
+
+  // DELIVERIES
+  const statusIcon = s => s === 'Entregado' ? '✅' : s === 'Parcial' ? '⚠️' : '❌';
+  const statusBadge = s => s === 'Entregado' ? 'badge-green' : s === 'Parcial' ? 'badge-orange' : 'badge-red';
+  document.getElementById('history-deliveries').innerHTML = state.records.deliveries.length
+    ? state.records.deliveries.map(d => `
+        <div class="card" style="margin-bottom:8px"><div class="card-body">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div class="list-item-name">🎯 ${d.route || d.client || '—'}</div>
+              ${d.km ? `<div style="color:var(--muted);font-size:12px">${d.km} km · <span style="color:var(--success)">$${Number(d.tariff||0).toFixed(2)}</span></div>` : ''}
+            </div>
+            <span class="badge ${statusBadge(d.status)}">${d.status}</span>
+          </div>
+          <div style="color:var(--muted);font-size:12px;margin-top:8px">
+            ${d.arrival ? '🕐 '+d.arrival : ''} ${d.departure ? '→ '+d.departure : ''}
+            ${d.notes ? '<br>📝 '+d.notes : ''}
+          </div>
+        </div></div>`).join('')
+    : '<div class="empty-state"><div class="icon">🎯</div>Sin entregas registradas hoy</div>';
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadState();
+updateTopDate();
+setInterval(updateTopDate, 30000);
+updateStats();
+updateSheetsStatus();
+updateLoadPlacesSelect();
+
+// Set default times
+const now = new Date();
+const hhmm = now.toTimeString().slice(0,5);
+document.getElementById('loadTime').value = hhmm;
+document.getElementById('deliveryArrival').value = hhmm;
+</script>
+</body>
+</html>
