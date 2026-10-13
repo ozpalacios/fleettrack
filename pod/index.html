@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0f1117">
+<title>FleetTrack POD — Prueba de Entrega</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #f5a623;
+    --accent2: #3d8bff;
+    --danger: #ff4d4d;
+    --success: #2ecc71;
+    --warn: #f1c40f;
+    --purple: #a970ff;
+    --text: #e8eaf0;
+    --muted: #7a8099;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    overflow-x: hidden;
+  }
+  body.wide { max-width: 1100px; }
+  a { color: var(--accent2); }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    position: sticky; top: 0; z-index: 1000;
+  }
+  .logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: 1px; color: var(--accent); cursor: pointer; }
+  .logo span { color: var(--text); }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .chip {
+    font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--muted); white-space: nowrap;
+  }
+  .chip.ok { color: var(--success); border-color: rgba(46,204,113,.4); }
+  .chip.warn { color: var(--accent); border-color: rgba(245,166,35,.5); }
+  .chip.err { color: var(--danger); border-color: rgba(255,77,77,.5); }
+  .icon-btn { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px; }
+
+  .content { padding: 16px; padding-bottom: 100px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+    margin: 22px 0 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .section-title:first-child { margin-top: 4px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .card h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .row > * { flex: 1; }
+  .spread { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+
+  /* FORMS */
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: .5px; text-transform: uppercase; }
+  input, select, textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 10px; padding: 12px; font-size: 16px; font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 64px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-family: 'Barlow Condensed', sans-serif;
+    font-size: 17px; font-weight: 700; letter-spacing: .5px; cursor: pointer; text-decoration: none;
+  }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #111; }
+  .btn-blue { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .btn-success { background: var(--success); border-color: var(--success); color: #0b2415; }
+  .btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+  .btn-sm { padding: 8px 12px; font-size: 14px; width: auto; border-radius: 10px; }
+
+  /* HOME */
+  .role-btn { text-align: left; display: flex; gap: 14px; align-items: center; padding: 20px; margin-bottom: 12px; cursor: pointer; }
+  .role-btn .ico { font-size: 34px; }
+  .role-btn h3 { margin: 0; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 14px; }
+  .tab { flex: 1; padding: 10px 6px; border: none; border-radius: 9px; background: none; color: var(--muted); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; }
+  .tab.active { background: var(--surface2); color: var(--accent); }
+  .tabpane { display: none; }
+  .tabpane.active { display: block; }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .kpi .v { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 800; line-height: 1.1; }
+  .kpi .l { font-size: 12px; color: var(--muted); }
+
+  .km-big { font-family: 'Barlow Condensed', sans-serif; font-size: 48px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .km-big span { font-size: 18px; color: var(--muted); font-weight: 600; }
+
+  .progress { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin: 10px 0 4px; }
+  .progress > div { height: 100%; background: var(--success); }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; background: var(--surface2); color: var(--muted); white-space: nowrap; }
+  .b-PENDIENTE { color: var(--muted); }
+  .b-ENTREGADO { background: rgba(46,204,113,.15); color: var(--success); }
+  .b-PARCIAL { background: rgba(241,196,15,.15); color: var(--warn); }
+  .b-RECHAZADO { background: rgba(255,77,77,.15); color: var(--danger); }
+  .b-NO_ENTREGADO { background: rgba(169,112,255,.15); color: var(--purple); }
+  .b-EN_RUTA { background: rgba(61,139,255,.15); color: var(--accent2); }
+  .b-FINALIZADA { background: rgba(46,204,113,.15); color: var(--success); }
+  .b-DENTRO { background: rgba(46,204,113,.15); color: var(--success); }
+  .b-FUERA { background: rgba(255,77,77,.15); color: var(--danger); }
+  .b-SIN_REF, .b-SIN_GPS { color: var(--muted); }
+
+  /* STOPS */
+  .stop { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .stop.done { opacity: .7; }
+  .stop-head { display: flex; gap: 12px; align-items: flex-start; }
+  .seq { min-width: 34px; height: 34px; border-radius: 50%; background: var(--surface2); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; }
+  .stop.done .seq { border-color: var(--success); color: var(--success); }
+  .stop-name { font-weight: 600; font-size: 16px; }
+  .stop-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .stop-actions .btn { flex: 1; min-width: 90px; }
+
+  /* TABLE */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { background: var(--surface2); color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  tr.err td { background: rgba(255,77,77,.08); }
+
+  .msg { padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 10px; }
+  .msg.err { background: rgba(255,77,77,.12); color: #ff9a9a; }
+  .msg.warn { background: rgba(245,166,35,.12); color: #ffd08a; }
+  .msg.ok { background: rgba(46,204,113,.12); color: #8ff0b8; }
+
+  .dropzone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 26px 16px; text-align: center; cursor: pointer; background: var(--surface); }
+  .dropzone.over { border-color: var(--accent); }
+  .dropzone input { display: none; }
+
+  #map { height: 420px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 14px; }
+  .leaflet-popup-content { font-family: 'Barlow', sans-serif; font-size: 13px; }
+
+  .route-card summary { list-style: none; cursor: pointer; }
+  .route-card summary::-webkit-details-marker { display: none; }
+
+  /* MODAL */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 2000; display: none; align-items: flex-end; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--bg); width: 100%; max-width: 480px; max-height: 94vh; overflow-y: auto; border-radius: 18px 18px 0 0; border-top: 2px solid var(--accent); padding: 18px 16px 28px; }
+  .estado-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .estado-opt { padding: 12px 8px; border-radius: 10px; border: 2px solid var(--border); background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; font-family: inherit; font-size: 14px; }
+  .estado-opt.sel { border-color: var(--accent); background: var(--surface2); }
+  .sig-wrap { position: relative; background: #fff; border-radius: 10px; height: 160px; touch-action: none; }
+  .sig-wrap canvas { width: 100%; height: 100%; display: block; border-radius: 10px; }
+  .sig-hint { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; color: #999; font-size: 12px; pointer-events: none; }
+  .photo-prev { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; margin-top: 8px; display: none; }
+  .gps-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 14px; margin-bottom: 12px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120px); background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 12px 18px; border-radius: 12px; font-weight: 600; z-index: 3000; transition: transform .25s; max-width: 92vw; text-align: center; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.err { border-color: var(--danger); color: #ffb3b3; }
+
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+  code { background: var(--surface2); padding: 2px 6px; border-radius: 6px; font-size: 12px; }
+
+  @media (min-width: 900px) {
+    .sup-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; align-items: start; }
+    .sup-grid > * { min-width: 0; }
+    #map { height: 640px; position: sticky; top: 76px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo" onclick="goHome()">FLEET<span>TRACK</span> · POD</div>
+  <div class="topbar-right">
+    <span class="chip" id="syncChip" title="Registros pendientes de sincronizar">☁ —</span>
+    <button class="icon-btn" onclick="openView('v-settings')" title="Ajustes">⚙</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ==================== HOME ==================== -->
+  <section class="view" id="v-home">
+    <div class="section-title">¿Quién usa la app?</div>
+    <div class="card role-btn" onclick="enterSupervisor()">
+      <div class="ico">🧑‍💼</div>
+      <div>
+        <h3>Supervisor de Despacho</h3>
+        <div class="muted">Cargar rutas del día (Excel/CSV) y monitorear entregas, km y evidencias.</div>
+      </div>
+    </div>
+    <div class="card role-btn" onclick="enterDriver()">
+      <div class="ico">🚚</div>
+      <div>
+        <h3>Conductor</h3>
+        <div class="muted">Iniciar ruta, registrar km por GPS y capturar la prueba de entrega en cada parada.</div>
+      </div>
+    </div>
+    <div id="homeApiWarn"></div>
+  </section>
+
+  <!-- ==================== SUPERVISOR ==================== -->
+  <section class="view" id="v-sup">
+    <div class="tabs">
+      <button class="tab active" data-pane="p-upload" onclick="supTab(this)">📤 Cargar rutas</button>
+      <button class="tab" data-pane="p-monitor" onclick="supTab(this)">📍 Monitoreo</button>
+    </div>
+
+    <!-- CARGA -->
+    <div class="tabpane active" id="p-upload">
+      <div class="card">
+        <div class="field">
+          <label>Fecha de las rutas (si el archivo no trae columna fecha)</label>
+          <input type="date" id="upFecha">
+        </div>
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="upFile" accept=".xlsx,.xls,.csv">
+          <div style="font-size:32px">📄</div>
+          <div style="font-weight:600;margin-top:6px">Toca para elegir el Excel o CSV de rutas</div>
+          <div class="muted" style="margin-top:4px">o arrástralo aquí</div>
+        </label>
+        <div class="row" style="margin-top:10px">
+          <button class="btn btn-sm" onclick="downloadTemplate()">⬇ Descargar plantilla</button>
+          <button class="btn btn-sm" onclick="copyDriverLink()">🔗 Enlace para conductores</button>
+        </div>
+        <p class="muted" style="margin-top:10px">
+          Columnas: <code>ruta</code> <code>conductor</code> <code>pedido</code> <code>cliente</code> <code>direccion</code>
+          · opcionales: <code>fecha</code> <code>placa</code> <code>seq</code> <code>telefono</code> <code>lat</code> <code>lng</code> <code>notas</code>.
+          Sin lat/lng, el sistema geocodifica la dirección con Google Maps.
+        </p>
+      </div>
+      <div id="upPreview"></div>
+    </div>
+
+    <!-- MONITOREO -->
+    <div class="tabpane" id="p-monitor">
+      <div class="card">
+        <div class="row">
+          <input type="date" id="monFecha">
+          <button class="btn btn-blue btn-sm" style="flex:0 0 auto" onclick="loadSummary()">↻ Actualizar</button>
+        </div>
+        <label class="muted" style="display:flex;gap:8px;align-items:center;margin-top:10px">
+          <input type="checkbox" id="monAuto" style="width:auto" checked> Actualizar cada 60 s
+        </label>
+      </div>
+      <div class="kpis" id="monKpis"></div>
+      <div class="sup-grid">
+        <div id="map"></div>
+        <div id="monRoutes"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CONDUCTOR: SELECCIÓN ==================== -->
+  <section class="view" id="v-drv">
+    <div class="card">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="drvFecha" onchange="loadDrivers()">
+      </div>
+      <div class="field">
+        <label>Conductor</label>
+        <select id="drvName" onchange="cfg.driver=this.value;saveCfg();loadDriverRoutes()"></select>
+      </div>
+    </div>
+    <div class="section-title">Mis rutas</div>
+    <div id="drvRoutes"><div class="empty">Selecciona tu nombre.</div></div>
+  </section>
+
+  <!-- ==================== CONDUCTOR: RUTA ==================== -->
+  <section class="view" id="v-route">
+    <div class="card">
+      <div class="spread">
+        <div>
+          <h3 id="rtTitle">Ruta</h3>
+          <div class="muted" id="rtSub"></div>
+        </div>
+        <span class="badge" id="rtEstado"></span>
+      </div>
+      <div class="spread" style="margin-top:14px;align-items:flex-end">
+        <div>
+          <div class="muted">Km recorridos (GPS)</div>
+          <div class="km-big" id="rtKm">0.0 <span>km</span></div>
+        </div>
+        <div style="text-align:right">
+          <div class="muted">Plan</div>
+          <div style="font-weight:700;font-size:18px" id="rtKmPlan">—</div>
+        </div>
+      </div>
+      <div class="progress"><div id="rtProg" style="width:0%"></div></div>
+      <div class="spread muted"><span id="rtProgTxt"></span><span id="rtGps">📡 GPS inactivo</span></div>
+      <div style="margin-top:14px" id="rtActions"></div>
+    </div>
+    <div id="rtSyncErr"></div>
+    <div class="section-title">Paradas</div>
+    <div id="rtStops"></div>
+    <button class="btn" style="margin-top:8px" onclick="leaveRoute()">← Volver a mis rutas</button>
+  </section>
+
+  <!-- ==================== AJUSTES ==================== -->
+  <section class="view" id="v-settings">
+    <div class="section-title">Conexión con Google Sheets</div>
+    <div class="card">
+      <div class="field">
+        <label>URL de la aplicación web (Apps Script)</label>
+        <input type="url" id="setApi" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" onclick="saveApi()">Guardar</button>
+        <button class="btn" onclick="testApi()">Probar</button>
+      </div>
+      <p class="muted" style="margin-top:10px">Instrucciones de instalación en <code>pod/README.md</code>. El código del backend está en <code>pod/apps-script/Code.gs</code>.</p>
+    </div>
+    <div class="section-title">Sincronización</div>
+    <div class="card">
+      <div id="setSync" class="muted"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" onclick="sync(true)">☁ Sincronizar ahora</button>
+      </div>
+    </div>
+    <div class="section-title">Sesión</div>
+    <div class="card">
+      <button class="btn" onclick="logoutSupervisor()">Cerrar sesión de supervisor</button>
+      <button class="btn btn-danger" style="margin-top:10px" onclick="resetLocal()">Borrar datos locales</button>
+      <p class="muted" style="margin-top:8px">No borra nada en Google Sheets. Los registros sin sincronizar sí se pierden.</p>
+    </div>
+    <button class="btn" onclick="goHome()">← Volver</button>
+  </section>
+</div>
+
+<!-- ==================== MODAL POD ==================== -->
+<div class="modal-bg" id="podModal">
+  <div class="modal">
+    <div class="spread">
+      <div>
+        <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:22px" id="podTitle">Registrar entrega</h3>
+        <div class="muted" id="podSub"></div>
+      </div>
+      <button class="icon-btn" onclick="closePod()">✕</button>
+    </div>
+
+    <div class="section-title">Resultado</div>
+    <div class="estado-grid">
+      <button class="estado-opt" data-e="ENTREGADO" onclick="setEstado(this)">✅ Entregado</button>
+      <button class="estado-opt" data-e="PARCIAL" onclick="setEstado(this)">🟡 Parcial</button>
+      <button class="estado-opt" data-e="RECHAZADO" onclick="setEstado(this)">⛔ Rechazado</button>
+      <button class="estado-opt" data-e="NO_ENTREGADO" onclick="setEstado(this)">🚪 No entregado</button>
+    </div>
+
+    <div class="field" id="fMotivo" style="display:none">
+      <label>Motivo</label>
+      <select id="podMotivo">
+        <option value="">— Seleccionar —</option>
+        <option>Cliente ausente</option>
+        <option>Dirección incorrecta / no localizada</option>
+        <option>Cliente rechaza producto</option>
+        <option>Producto dañado</option>
+        <option>Faltante de producto</option>
+        <option>Pedido no solicitado / duplicado</option>
+        <option>Sin efectivo / pago pendiente</option>
+        <option>Zona insegura / sin acceso</option>
+        <option>Fuera de horario</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="field" id="fReceptor">
+      <label>Nombre de quien recibe</label>
+      <input type="text" id="podReceptor" placeholder="Nombre y apellido">
+    </div>
+    <div class="field">
+      <label>Comentario</label>
+      <textarea id="podComentario" placeholder="Opcional"></textarea>
+    </div>
+
+    <div class="section-title">Ubicación de la entrega</div>
+    <div class="gps-box" id="podGps">📡 Obteniendo ubicación…</div>
+
+    <div class="section-title">Evidencia</div>
+    <div class="field">
+      <label for="podFoto" class="btn" style="text-transform:none;letter-spacing:0;font-size:16px;color:var(--text)">📷 Tomar foto</label>
+      <input type="file" id="podFoto" accept="image/*" capture="environment" style="display:none">
+      <img id="podFotoPrev" class="photo-prev" alt="">
+    </div>
+    <div class="field" id="fFirma">
+      <div class="spread"><label>Firma de quien recibe</label><button class="btn btn-sm" style="padding:4px 10px" onclick="clearSig()">Borrar</button></div>
+      <div class="sig-wrap"><canvas id="sig"></canvas><div class="sig-hint" id="sigHint">Firme aquí</div></div>
+    </div>
+
+    <div id="podErr"></div>
+    <button class="btn btn-success" id="podSave" onclick="savePod()">Guardar prueba de entrega</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONSTANTES (los filtros GPS coinciden con el backend)
+// ============================================================
+const GPS_MAX_ACC_M = 60;       // precisión máxima aceptada
+const GPS_MIN_STEP_KM = 0.02;   // movimiento mínimo (filtra ruido)
+const GPS_MAX_KMH = 160;        // salto imposible
+const TRACK_STORE_KM = 0.05;    // guardar punto en Sheets cada 50 m…
+const TRACK_STORE_MS = 120000;  // …o cada 2 minutos
+const TRACK_FLUSH_MS = 60000;   // enviar lote de puntos cada minuto
+const ESTADO_LBL = { PENDIENTE: 'Pendiente', ENTREGADO: 'Entregado', PARCIAL: 'Parcial', RECHAZADO: 'Rechazado', NO_ENTREGADO: 'No entregado', EN_RUTA: 'En ruta', FINALIZADA: 'Finalizada' };
+const ESTADO_COLOR = { PENDIENTE: '#7a8099', ENTREGADO: '#2ecc71', PARCIAL: '#f1c40f', RECHAZADO: '#ff4d4d', NO_ENTREGADO: '#a970ff' };
+const ROUTE_COLORS = ['#f5a623', '#3d8bff', '#2ecc71', '#ff6b9d', '#a970ff', '#00d2d3', '#ff9f43', '#c8d6e5'];
+
+// ============================================================
+// ESTADO LOCAL
+// ============================================================
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+};
+let cfg = LS.get('pod_cfg', { api: '', driver: '' });
+let session = LS.get('pod_session', null);    // ruta activa del conductor
+let queue = LS.get('pod_queue', []);          // operaciones pendientes de enviar
+let trackBuf = LS.get('pod_trackbuf', []);    // puntos GPS aún no encolados
+let routesCache = LS.get('pod_routes', {});   // rutas descargadas (uso sin señal)
+let geocercaM = LS.get('pod_geocerca', 150);
+let supPin = sessionStorage.getItem('pod_pin') || '';
+
+function saveCfg() { LS.set('pod_cfg', cfg); }
+function saveSession() { LS.set('pod_session', session); }
+function saveQueue() {
+  const ok = LS.set('pod_queue', queue) && LS.set('pod_trackbuf', trackBuf);
+  if (!ok) toast('⚠ Memoria del teléfono llena. Conéctate a internet para sincronizar.', true);
+  renderSync();
+  return ok;
+}
+
+// ============================================================
+// UTILIDADES
+// ============================================================
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function todayStr() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function hhmm(v) { if (!v) return ''; const d = new Date(v); return isNaN(d) ? '' : d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }); }
+function fmtKm(v) { return v === '' || v == null || isNaN(v) ? '—' : Number(v).toFixed(1) + ' km'; }
+function num(v) { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; }
+function validCoord(lat, lng) { return lat != null && lng != null && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0); }
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371, rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+function badge(e) { return `<span class="badge b-${esc(e)}">${esc(ESTADO_LBL[e] || e)}</span>`; }
+function isDone(estado) { return estado && estado !== 'PENDIENTE'; }
+
+let toastT;
+function toast(msg, err) {
+  const t = $('toast');
+  t.textContent = msg; t.className = 'toast show' + (err ? ' err' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => t.className = 'toast', 3200);
+}
+
+// ============================================================
+// API (Apps Script)
+// ============================================================
+function netError(e) { const err = new Error('Sin conexión'); err.network = true; err.cause = e; return err; }
+
+async function apiGet(params) {
+  if (!cfg.api) throw new Error('Configura la URL de Apps Script en Ajustes ⚙');
+  const u = new URL(cfg.api);
+  Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
+  let res;
+  try { res = await fetch(u); } catch (e) { throw netError(e); }
+  const j = await res.json().catch(() => ({ ok: false, error: 'Respuesta inválida del servidor' }));
+  if (!j.ok) throw new Error(j.error || 'Error del servidor');
+  return j;
+}
+
+async function apiPost(body) {
+  if (!cfg.api) throw new Error('Configura la URL de Apps Script en Ajustes ⚙');
+  let res;
+  try {
+    res = await fetch(cfg.api, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+  } catch (e) { throw netError(e); }
+  const j = await res.json().catch(() => ({ ok: false, error: 'Respuesta inválida del servidor' }));
+  if (!j.ok) throw new Error(j.error || 'Error del servidor');
+  return j;
+}
+
+// ============================================================
+// COLA DE SINCRONIZACIÓN (funciona sin señal)
+// ============================================================
+function enqueue(action, payload) {
+  queue.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), action, payload, tries: 0 });
+  const ok = saveQueue();
+  sync();
+  return ok;
+}
+
+let syncing = false;
+async function sync(manual) {
+  if (syncing) return;
+  if (!queue.length) { if (manual) toast('✅ Todo sincronizado'); renderSync(); return; }
+  if (!cfg.api) { renderSync(); return; }
+  syncing = true; renderSync();
+  let netFail = false;
+  try {
+    for (const item of [...queue]) {
+      try {
+        const res = await apiPost({ action: item.action, ...item.payload });
+        queue = queue.filter(q => q.id !== item.id);
+        saveQueue();
+        onSynced(item, res);
+      } catch (e) {
+        if (e.network) { netFail = true; break; }
+        item.tries = (item.tries || 0) + 1;
+        item.error = e.message;
+        saveQueue();
+      }
+    }
+  } finally {
+    syncing = false; renderSync();
+    if (manual) toast(netFail ? '📴 Sin conexión, se reintentará' : queue.length ? '⚠ Hay registros con error' : '✅ Todo sincronizado', netFail || queue.length);
+  }
+}
+
+function onSynced(item, res) {
+  if (item.action === 'pod' && session && session.done && session.done[item.payload.seq]) {
+    session.done[item.payload.seq].geocerca = res.geocerca;
+    session.done[item.payload.seq].sync = true;
+    saveSession();
+    if ($('v-route').classList.contains('active')) renderRoute();
+  }
+}
+
+function renderSync() {
+  const n = queue.length + (trackBuf.length ? 1 : 0);
+  const errs = queue.filter(q => q.error).length;
+  const chip = $('syncChip');
+  if (syncing) { chip.textContent = '☁ enviando…'; chip.className = 'chip warn'; }
+  else if (errs) { chip.textContent = `☁ ${errs} con error`; chip.className = 'chip err'; }
+  else if (n) { chip.textContent = `☁ ${n} pendiente${n > 1 ? 's' : ''}`; chip.className = 'chip warn'; }
+  else { chip.textContent = '☁ al día'; chip.className = 'chip ok'; }
+  const lbl = { startRoute: 'Inicio de ruta', track: 'Puntos GPS', pod: 'Prueba de entrega', endRoute: 'Fin de ruta' };
+  const html = queue.length
+    ? queue.map(q => `<div>• ${lbl[q.action] || q.action}${q.payload.seq ? ' #' + esc(q.payload.seq) : ''}${q.error ? ` — <span style="color:var(--danger)">${esc(q.error)}</span>` : ''}</div>`).join('')
+    : 'No hay registros pendientes.';
+  if ($('setSync')) $('setSync').innerHTML = html + (trackBuf.length ? `<div>• ${trackBuf.length} punto(s) GPS en espera</div>` : '');
+  const errBox = $('rtSyncErr');
+  if (errBox) errBox.innerHTML = errs ? `<div class="msg err">⚠ ${errs} registro(s) no se pudieron guardar en Sheets. Revisa Ajustes ⚙ → Sincronización.</div>` : '';
+}
+
+window.addEventListener('online', () => sync());
+setInterval(() => { flushTrack(); sync(); }, TRACK_FLUSH_MS);
+
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
+function openView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === id));
+  document.body.classList.toggle('wide', id === 'v-sup');
+  if (id === 'v-settings') { $('setApi').value = cfg.api || ''; renderSync(); }
+  if (id === 'v-home') renderHome();
+  window.scrollTo(0, 0);
+}
+function goHome() {
+  if (session && session.active) return openRoute(session.ruta_id);
+  openView('v-home');
+}
+function renderHome() {
+  $('homeApiWarn').innerHTML = cfg.api ? '' :
+    `<div class="msg warn">Primero configura la URL del backend (Apps Script) en <a href="#" onclick="openView('v-settings');return false">Ajustes ⚙</a>.</div>`;
+}
+
+// ============================================================
+// AJUSTES
+// ============================================================
+function saveApi() {
+  const v = $('setApi').value.trim();
+  if (v && !/^https:\/\/script\.google\.com\/.+\/exec$/.test(v)) return toast('La URL debe terminar en /exec', true);
+  cfg.api = v; saveCfg(); toast('✅ Guardado'); sync();
+}
+async function testApi() {
+  const prev = cfg.api; cfg.api = $('setApi').value.trim();
+  try { const j = await apiGet({ action: 'ping' }); toast('✅ Conectado: ' + j.app); }
+  catch (e) { toast('❌ ' + e.message, true); }
+  finally { cfg.api = prev; }
+}
+function logoutSupervisor() { supPin = ''; sessionStorage.removeItem('pod_pin'); toast('Sesión de supervisor cerrada'); }
+function resetLocal() {
+  if (session && session.active) return toast('Finaliza la ruta activa primero', true);
+  if (queue.length && !confirm(`Hay ${queue.length} registro(s) sin sincronizar que se perderán. ¿Continuar?`)) return;
+  const api = cfg.api;
+  ['pod_session', 'pod_queue', 'pod_trackbuf', 'pod_routes'].forEach(k => localStorage.removeItem(k));
+  session = null; queue = []; trackBuf = []; routesCache = {}; cfg = { api, driver: '' }; saveCfg();
+  renderSync(); toast('Datos locales borrados');
+}
+
+// ============================================================
+// SUPERVISOR
+// ============================================================
+async function enterSupervisor() {
+  if (!cfg.api) return openView('v-settings');
+  if (!supPin) {
+    const pin = prompt('PIN de supervisor');
+    if (!pin) return;
+    try { await apiPost({ action: 'verifyPin', pin }); }
+    catch (e) { return toast('❌ ' + e.message, true); }
+    supPin = pin; sessionStorage.setItem('pod_pin', pin);
+  }
+  $('upFecha').value = $('upFecha').value || todayStr();
+  $('monFecha').value = $('monFecha').value || todayStr();
+  openView('v-sup');
+}
+
+function supTab(btn) {
+  document.querySelectorAll('#v-sup .tab').forEach(t => t.classList.toggle('active', t === btn));
+  document.querySelectorAll('#v-sup .tabpane').forEach(p => p.classList.toggle('active', p.id === btn.dataset.pane));
+  if (btn.dataset.pane === 'p-monitor') { initMap(); loadSummary(); }
+}
+
+function copyDriverLink() {
+  if (!cfg.api) return toast('Configura primero la URL del backend', true);
+  const u = new URL(location.href.split('#')[0].split('?')[0]);
+  u.searchParams.set('api', cfg.api);
+  u.searchParams.set('rol', 'conductor');
+  navigator.clipboard.writeText(u.toString())
+    .then(() => toast('🔗 Enlace copiado: envíalo por WhatsApp a los conductores'))
+    .catch(() => prompt('Copia este enlace:', u.toString()));
+}
+
+// ---------- Carga de Excel / CSV ----------
+const COLS = {
+  fecha: ['fecha', 'date', 'fecha_entrega', 'dia'],
+  ruta: ['ruta', 'route', 'codigo_ruta', 'id_ruta', 'nombre_ruta'],
+  conductor: ['conductor', 'chofer', 'piloto', 'motorista', 'driver', 'repartidor'],
+  placa: ['placa', 'vehiculo', 'camion', 'unidad'],
+  seq: ['seq', 'orden', 'secuencia', 'parada', 'no', 'n', 'num', 'numero'],
+  pedido: ['pedido', 'no_pedido', 'factura', 'documento', 'guia', 'order', 'orden_pedido'],
+  cliente: ['cliente', 'nombre', 'destinatario', 'customer', 'nombre_cliente', 'tienda'],
+  direccion: ['direccion', 'address', 'domicilio', 'destino_direccion'],
+  telefono: ['telefono', 'tel', 'celular', 'phone', 'movil'],
+  lat: ['lat', 'latitud', 'latitude'],
+  lng: ['lng', 'lon', 'long', 'longitud', 'longitude'],
+  coords: ['coordenadas', 'coords', 'ubicacion', 'destino', 'gps'],
+  notas: ['notas', 'nota', 'observaciones', 'comentario', 'comentarios', 'referencia']
+};
+function normKey(k) { return String(k).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''); }
+function cellDate(v) {
+  if (v instanceof Date) return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0');
+  if (typeof v === 'number' && v > 30000 && v < 80000) { const d = XLSX.SSF.parse_date_code(v); return d.y + '-' + String(d.m).padStart(2, '0') + '-' + String(d.d).padStart(2, '0'); }
+  const s = String(v || '').trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  return '';
+}
+
+let upRows = [];
+
+const dz = $('dropzone');
+$('upFile').addEventListener('change', e => { if (e.target.files[0]) readRoutesFile(e.target.files[0]); e.target.value = ''; });
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) readRoutesFile(e.dataTransfer.files[0]); });
+
+async function readRoutesFile(file) {
+  try {
+    let wb;
+    if (/\.csv$/i.test(file.name)) {
+      wb = XLSX.read(await file.text(), { type: 'string', raw: true });
+    } else {
+      wb = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+    }
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const raw = XLSX.utils.sheet_to_json(ws, { defval: '', raw: true });
+    if (!raw.length) return toast('El archivo no tiene filas', true);
+    // Mapear encabezados
+    const map = {};
+    Object.keys(raw[0]).forEach(h => {
+      const n = normKey(h);
+      for (const [field, aliases] of Object.entries(COLS)) if (!map[field] && aliases.includes(n)) map[field] = h;
+    });
+    const missing = ['ruta', 'conductor', 'direccion'].filter(f => !map[f]);
+    if (!map.pedido && !map.cliente) missing.push('pedido o cliente');
+    if (missing.length) {
+      $('upPreview').innerHTML = `<div class="msg err">Faltan columnas obligatorias: <b>${missing.join(', ')}</b>. Encabezados encontrados: ${Object.keys(raw[0]).map(esc).join(', ')}</div>`;
+      return;
+    }
+    const defFecha = $('upFecha').value || todayStr();
+    upRows = raw.map((r, i) => {
+      const g = f => map[f] ? r[map[f]] : '';
+      let lat = num(g('lat')), lng = num(g('lng'));
+      if ((lat == null || lng == null) && map.coords) {
+        const parts = String(g('coords')).split(/[,;\s]+/).map(num).filter(v => v != null);
+        if (parts.length >= 2) { lat = parts[0]; lng = parts[1]; }
+      }
+      const row = {
+        fila: i + 2,
+        fecha: cellDate(g('fecha')) || defFecha,
+        ruta: String(g('ruta')).trim(), conductor: String(g('conductor')).trim(), placa: String(g('placa')).trim(),
+        seq: num(g('seq')), pedido: String(g('pedido')).trim(), cliente: String(g('cliente')).trim(),
+        direccion: String(g('direccion')).trim(), telefono: String(g('telefono')).trim(),
+        lat: validCoord(lat, lng) ? lat : '', lng: validCoord(lat, lng) ? lng : '', notas: String(g('notas')).trim(),
+        errores: []
+      };
+      if (!row.ruta) row.errores.push('sin ruta');
+      if (!row.pedido && !row.cliente) row.errores.push('sin pedido/cliente');
+      if (!row.direccion && row.lat === '') row.errores.push('sin dirección ni coordenadas');
+      return row;
+    }).filter(r => r.ruta || r.pedido || r.cliente || r.direccion);
+    // Secuencia por ruta si no viene
+    const seqs = {};
+    upRows.forEach(r => { const k = r.fecha + '_' + r.ruta; seqs[k] = (seqs[k] || 0) + 1; if (r.seq == null) r.seq = seqs[k]; });
+    // Conductor obligatorio por ruta
+    const drv = {};
+    upRows.forEach(r => { const k = r.fecha + '_' + r.ruta; if (r.conductor) drv[k] = r.conductor; });
+    upRows.forEach(r => { const k = r.fecha + '_' + r.ruta; if (!drv[k]) r.errores.push('ruta sin conductor'); });
+    renderUploadPreview(file.name);
+  } catch (e) {
+    console.error(e);
+    toast('No se pudo leer el archivo: ' + e.message, true);
+  }
+}
+
+function renderUploadPreview(name) {
+  const groups = {};
+  upRows.forEach(r => {
+    const k = r.fecha + '_' + r.ruta;
+    (groups[k] = groups[k] || { fecha: r.fecha, ruta: r.ruta, conductor: '', placa: '', rows: [] }).rows.push(r);
+    if (r.conductor) groups[k].conductor = r.conductor;
+    if (r.placa) groups[k].placa = r.placa;
+  });
+  const errRows = upRows.filter(r => r.errores.length);
+  const sinCoord = upRows.filter(r => r.lat === '').length;
+  let html = `<div class="section-title">Vista previa · ${esc(name)}</div>`;
+  html += `<div class="kpis">
+    <div class="kpi"><div class="v">${Object.keys(groups).length}</div><div class="l">Rutas</div></div>
+    <div class="kpi"><div class="v">${upRows.length}</div><div class="l">Paradas</div></div>
+    <div class="kpi"><div class="v" style="color:${sinCoord ? 'var(--accent)' : 'var(--success)'}">${sinCoord}</div><div class="l">Sin coordenadas (se geocodifican)</div></div>
+    <div class="kpi"><div class="v" style="color:${errRows.length ? 'var(--danger)' : 'var(--success)'}">${errRows.length}</div><div class="l">Filas con error</div></div>
+  </div>`;
+  if (errRows.length) html += `<div class="msg err">Corrige las filas marcadas en rojo y vuelve a subir el archivo.</div>`;
+  Object.values(groups).forEach(g => {
+    html += `<div class="card">
+      <div class="spread"><h3>Ruta ${esc(g.ruta)}</h3><span class="muted">${esc(g.fecha)}</span></div>
+      <div class="muted">🚚 ${esc(g.conductor || '—')} ${g.placa ? '· ' + esc(g.placa) : ''} · ${g.rows.length} paradas</div>
+      <div class="tbl-wrap" style="margin-top:10px"><table>
+        <tr><th>#</th><th>Pedido</th><th>Cliente</th><th>Dirección</th><th>Coord.</th><th>Obs.</th></tr>
+        ${g.rows.sort((a, b) => a.seq - b.seq).map(r => `<tr class="${r.errores.length ? 'err' : ''}">
+          <td>${esc(r.seq)}</td><td>${esc(r.pedido)}</td><td>${esc(r.cliente)}</td><td>${esc(r.direccion)}</td>
+          <td>${r.lat !== '' ? '✅' : '🔎'}</td><td>${r.errores.length ? '❌ ' + esc(r.errores.join(', ')) : esc(r.notas)}</td></tr>`).join('')}
+      </table></div></div>`;
+  });
+  html += `<button class="btn btn-primary" id="btnPublish" ${errRows.length ? 'disabled' : ''} onclick="publishRoutes()">🚀 Publicar ${Object.keys(groups).length} ruta(s) a los conductores</button>
+    <p class="muted" style="margin-top:8px">Si una ruta ya existe para esa fecha y aún no tiene entregas, se reemplaza.</p>`;
+  $('upPreview').innerHTML = html;
+}
+
+async function publishRoutes() {
+  const btn = $('btnPublish');
+  btn.disabled = true; btn.textContent = '⏳ Publicando y geocodificando…';
+  try {
+    const rows = upRows.map(({ errores, fila, ...r }) => r);
+    const res = await apiPost({ action: 'uploadRoutes', pin: supPin, usuario: 'Supervisor de despacho', rows });
+    let html = `<div class="msg ok">✅ ${res.rutas.length} ruta(s) publicadas.</div>`;
+    res.errores.forEach(e => html += `<div class="msg err">${esc(e)}</div>`);
+    html += `<div class="tbl-wrap"><table><tr><th>Ruta</th><th>Conductor</th><th>Paradas</th><th>Sin ubicar</th><th>Km plan</th></tr>
+      ${res.rutas.map(r => `<tr><td>${esc(r.ruta)}</td><td>${esc(r.conductor)}</td><td>${r.paradas}</td>
+        <td style="color:${r.sin_coord ? 'var(--danger)' : 'inherit'}">${r.sin_coord}</td>
+        <td>${fmtKm(r.km_plan)} <span class="muted">${r.km_plan_fuente === 'GOOGLE_MAPS' ? '(Google Maps)' : r.km_plan_fuente ? '(estimado)' : ''}</span></td></tr>`).join('')}
+      </table></div>`;
+    if (res.rutas.some(r => r.sin_coord)) html += `<div class="msg warn" style="margin-top:10px">Las paradas "sin ubicar" no tendrán validación de geocerca. Agrega lat/lng en el archivo para esas direcciones.</div>`;
+    $('upPreview').innerHTML = html;
+    upRows = [];
+    toast('✅ Rutas publicadas');
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '🚀 Reintentar publicación';
+    toast('❌ ' + e.message, true);
+  }
+}
+
+function downloadTemplate() {
+  const f = todayStr();
+  const rows = [
+    ['fecha', 'ruta', 'conductor', 'placa', 'seq', 'pedido', 'cliente', 'direccion', 'telefono', 'lat', 'lng', 'notas'],
+    [f, 'R01', 'Juan Pérez', 'C-123456', 1, 'PED-0001', 'María López', 'Col. Escalón, Calle Principal #123', '7000-0001', 13.7065, -89.2420, 'Portón negro'],
+    [f, 'R01', 'Juan Pérez', 'C-123456', 2, 'PED-0002', 'Carlos Ramírez', 'Res. Santa Elena, Pje. 3 #45', '7000-0002', '', '', 'Llamar antes'],
+    [f, 'R02', 'Ana Martínez', 'C-654321', 1, 'PED-0003', 'Tienda La Esquina', 'Av. Olímpica #800', '7000-0003', 13.6990, -89.2190, '']
+  ];
+  const csv = rows.map(r => r.map(v => /[",;\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'plantilla_rutas_pod.csv';
+  a.click();
+}
+
+// ---------- Monitoreo ----------
+let map, mapLayer, monTimer, monData;
+function initMap() {
+  if (map) { setTimeout(() => map.invalidateSize(), 50); return; }
+  if (typeof L === 'undefined') { $('map').innerHTML = '<div class="empty">No se pudo cargar el mapa (sin internet).</div>'; return; }
+  map = L.map('map').setView([13.7, -89.2], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+  mapLayer = L.layerGroup().addTo(map);
+}
+
+async function loadSummary() {
+  clearTimeout(monTimer);
+  try {
+    monData = await apiPost({ action: 'summary', pin: supPin, fecha: $('monFecha').value || todayStr() });
+    renderMonitor();
+  } catch (e) {
+    toast('❌ ' + e.message, true);
+  }
+  if ($('monAuto').checked && $('p-monitor').classList.contains('active') && $('v-sup').classList.contains('active')) {
+    monTimer = setTimeout(loadSummary, 60000);
+  }
+}
+
+function renderMonitor() {
+  const rutas = monData.rutas;
+  const stops = rutas.flatMap(r => r.stops);
+  const cnt = e => stops.filter(s => s.estado === e).length;
+  const entregadas = cnt('ENTREGADO') + cnt('PARCIAL');
+  const fallidas = cnt('RECHAZADO') + cnt('NO_ENTREGADO');
+  const pods = stops.filter(s => s.pod);
+  const fuera = pods.filter(s => s.pod.geocerca === 'FUERA').length;
+  const kmGps = rutas.reduce((a, r) => a + (Number(r.km_gps_servidor || r.km_gps_dispositivo) || 0), 0);
+  const kmPlan = rutas.reduce((a, r) => a + (Number(r.km_plan) || 0), 0);
+  const pct = stops.length ? Math.round(entregadas / stops.length * 100) : 0;
+  $('monKpis').innerHTML = `
+    <div class="kpi"><div class="v">${rutas.length}</div><div class="l">Rutas · ${rutas.filter(r => r.estado === 'EN_RUTA').length} en ruta</div></div>
+    <div class="kpi"><div class="v" style="color:var(--success)">${pct}%</div><div class="l">Cumplimiento (${entregadas}/${stops.length})</div></div>
+    <div class="kpi"><div class="v" style="color:var(--danger)">${fallidas}</div><div class="l">Rechazadas / no entregadas</div></div>
+    <div class="kpi"><div class="v">${stops.length - entregadas - fallidas}</div><div class="l">Pendientes</div></div>
+    <div class="kpi"><div class="v" style="color:${fuera ? 'var(--danger)' : 'var(--success)'}">${fuera}</div><div class="l">POD fuera de geocerca (&gt;${monData.geocerca_m} m)</div></div>
+    <div class="kpi"><div class="v">${kmGps.toFixed(1)}</div><div class="l">Km GPS · plan ${kmPlan.toFixed(1)}</div></div>`;
+
+  if (!rutas.length) {
+    $('monRoutes').innerHTML = '<div class="empty">No hay rutas cargadas para esta fecha.</div>';
+  } else {
+    $('monRoutes').innerHTML = rutas.map((r, i) => {
+      const done = r.stops.filter(s => isDone(s.estado)).length;
+      const kmG = Number(r.km_gps_servidor || r.km_gps_dispositivo) || 0;
+      const desv = r.km_plan && kmG ? Math.round((kmG / r.km_plan - 1) * 100) : null;
+      return `<details class="card route-card">
+        <summary>
+          <div class="spread">
+            <h3><span style="color:${ROUTE_COLORS[i % ROUTE_COLORS.length]}">●</span> Ruta ${esc(r.ruta)}</h3>
+            ${badge(r.estado)}
+          </div>
+          <div class="muted">🚚 ${esc(r.conductor)} ${r.placa ? '· ' + esc(r.placa) : ''} · ${hhmm(r.inicio) ? 'inicio ' + hhmm(r.inicio) : 'sin iniciar'}${hhmm(r.fin) ? ' · fin ' + hhmm(r.fin) : ''}</div>
+          <div class="progress"><div style="width:${r.stops.length ? done / r.stops.length * 100 : 0}%"></div></div>
+          <div class="spread muted"><span>${done}/${r.stops.length} paradas</span>
+            <span>GPS ${fmtKm(kmG || '')} · plan ${fmtKm(r.km_plan)}${desv != null ? ` <b style="color:${Math.abs(desv) > 20 ? 'var(--danger)' : 'var(--success)'}">(${desv > 0 ? '+' : ''}${desv}%)</b>` : ''}</span></div>
+        </summary>
+        <div class="tbl-wrap" style="margin-top:12px"><table>
+          <tr><th>#</th><th>Cliente</th><th>Estado</th><th>Hora</th><th>Recibe / motivo</th><th>Geocerca</th><th>Evidencia</th></tr>
+          ${r.stops.map(s => {
+            const p = s.pod || {};
+            return `<tr><td>${esc(s.seq)}</td><td>${esc(s.cliente || s.pedido)}<div class="muted">${esc(s.pedido)}</div></td>
+              <td>${badge(s.estado)}</td><td>${hhmm(p.hora_dispositivo)}</td>
+              <td>${esc(p.receptor || p.motivo || '')}</td>
+              <td>${p.geocerca ? badge(p.geocerca) + (p.dist_destino_m !== '' && p.dist_destino_m != null ? ` <span class="muted">${p.dist_destino_m} m</span>` : '') : ''}</td>
+              <td>${p.foto_url ? `<a href="${esc(p.foto_url)}" target="_blank">📷</a> ` : ''}${p.firma_url ? `<a href="${esc(p.firma_url)}" target="_blank">✍</a> ` : ''}${p.mapa ? `<a href="${esc(p.mapa)}" target="_blank">📍</a>` : ''}</td></tr>`;
+          }).join('')}
+        </table></div>
+        <button class="btn btn-sm" style="margin-top:10px" onclick="focusRoute(${i})">🗺 Ver en mapa</button>
+      </details>`;
+    }).join('');
+  }
+  drawMap();
+}
+
+function drawMap(onlyIdx) {
+  if (!map) return;
+  mapLayer.clearLayers();
+  const bounds = [];
+  monData.rutas.forEach((r, i) => {
+    if (onlyIdx != null && onlyIdx !== i) return;
+    const color = ROUTE_COLORS[i % ROUTE_COLORS.length];
+    if (r.track && r.track.length > 1) {
+      L.polyline(r.track.map(t => [t[0], t[1]]), { color, weight: 4, opacity: .8 }).addTo(mapLayer)
+        .bindPopup(`<b>Ruta ${esc(r.ruta)}</b><br>${esc(r.conductor)}<br>Recorrido GPS: ${fmtKm(r.km_gps_servidor || r.km_gps_dispositivo)}`);
+      const last = r.track[r.track.length - 1];
+      L.circleMarker([last[0], last[1]], { radius: 9, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 }).addTo(mapLayer)
+        .bindPopup(`🚚 <b>${esc(r.conductor)}</b><br>Última posición ${hhmm(last[2])}`);
+      r.track.forEach(t => bounds.push([t[0], t[1]]));
+    }
+    r.stops.forEach(s => {
+      const lat = num(s.lat), lng = num(s.lng);
+      const p = s.pod;
+      const info = `<b>#${esc(s.seq)} ${esc(s.cliente)}</b><br>${esc(s.pedido)}<br>${esc(s.direccion)}<br>${badge(s.estado)}` +
+        (p ? `<br>${esc(p.receptor || p.motivo || '')} · ${hhmm(p.hora_dispositivo)}<br>Geocerca: ${esc(p.geocerca)} ${p.dist_destino_m !== '' ? '(' + p.dist_destino_m + ' m)' : ''}` +
+          (p.foto_url ? `<br><a href="${esc(p.foto_url)}" target="_blank">Ver foto</a>` : '') + (p.firma_url ? ` · <a href="${esc(p.firma_url)}" target="_blank">Ver firma</a>` : '') : '');
+      if (validCoord(lat, lng)) {
+        L.circleMarker([lat, lng], { radius: 8, color, weight: 2, fillColor: ESTADO_COLOR[s.estado] || '#7a8099', fillOpacity: .95 })
+          .addTo(mapLayer).bindPopup(info);
+        bounds.push([lat, lng]);
+      }
+      const plat = p ? num(p.lat) : null, plng = p ? num(p.lng) : null;
+      if (p && validCoord(plat, plng)) {
+        const out = p.geocerca === 'FUERA';
+        L.marker([plat, plng], { icon: L.divIcon({ className: '', html: `<div style="font-size:18px;transform:translate(-6px,-18px)">${out ? '⚠️' : '📍'}</div>` }) })
+          .addTo(mapLayer).bindPopup('Punto de registro POD<br>' + info);
+        if (validCoord(lat, lng) && out) L.polyline([[lat, lng], [plat, plng]], { color: '#ff4d4d', dashArray: '6 6', weight: 2 }).addTo(mapLayer);
+        bounds.push([plat, plng]);
+      }
+    });
+  });
+  if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+}
+function focusRoute(i) { drawMap(i); $('map').scrollIntoView({ behavior: 'smooth' }); }
+
+// ============================================================
+// CONDUCTOR
+// ============================================================
+function enterDriver() {
+  if (!cfg.api) return openView('v-settings');
+  if (session && session.active) return openRoute(session.ruta_id);
+  $('drvFecha').value = $('drvFecha').value || todayStr();
+  openView('v-drv');
+  loadDrivers();
+}
+
+async function loadDrivers() {
+  const sel = $('drvName');
+  try {
+    const j = await apiGet({ action: 'drivers', fecha: $('drvFecha').value });
+    const list = j.conductores;
+    if (cfg.driver && !list.includes(cfg.driver)) list.push(cfg.driver);
+    sel.innerHTML = '<option value="">— Seleccionar —</option>' + list.map(n => `<option ${n === cfg.driver ? 'selected' : ''}>${esc(n)}</option>`).join('');
+    if (!j.conductores.length) $('drvRoutes').innerHTML = '<div class="empty">No hay rutas cargadas para esta fecha.</div>';
+  } catch (e) {
+    sel.innerHTML = cfg.driver ? `<option selected>${esc(cfg.driver)}</option>` : '<option value="">Sin conexión</option>';
+    if (!e.network) toast('❌ ' + e.message, true);
+  }
+  if (sel.value) loadDriverRoutes();
+}
+
+async function loadDriverRoutes() {
+  const name = $('drvName').value;
+  if (!name) return;
+  const fecha = $('drvFecha').value;
+  let rutas;
+  try {
+    const j = await apiGet({ action: 'routes', fecha, conductor: name });
+    rutas = j.rutas;
+    geocercaM = j.geocerca_m || 150; LS.set('pod_geocerca', geocercaM);
+    rutas.forEach(r => routesCache[r.ruta_id] = r);
+    LS.set('pod_routes', routesCache);
+  } catch (e) {
+    rutas = Object.values(routesCache).filter(r => r.fecha === fecha && r.conductor === name);
+    toast(e.network ? '📴 Sin conexión: mostrando rutas guardadas' : '❌ ' + e.message, !e.network);
+  }
+  $('drvRoutes').innerHTML = rutas.length ? rutas.map(r => {
+    const done = r.stops.filter(s => isDone(s.estado)).length;
+    return `<div class="card" style="cursor:pointer" data-id="${esc(r.ruta_id)}" onclick="openRoute(this.dataset.id)">
+      <div class="spread"><h3>Ruta ${esc(r.ruta)}</h3>${badge(r.estado)}</div>
+      <div class="muted">${r.placa ? esc(r.placa) + ' · ' : ''}${r.stops.length} paradas · plan ${fmtKm(r.km_plan)}</div>
+      <div class="progress"><div style="width:${r.stops.length ? done / r.stops.length * 100 : 0}%"></div></div>
+    </div>`;
+  }).join('') : '<div class="empty">No tienes rutas asignadas para esta fecha.</div>';
+}
+
+// ---------- Ruta activa ----------
+let curRoute = null;
+function openRoute(id) {
+  curRoute = routesCache[id];
+  if (!curRoute) return toast('Ruta no disponible sin conexión', true);
+  openView('v-route');
+  renderRoute();
+  if (session && session.active && session.ruta_id === id) startWatch();
+}
+function leaveRoute() {
+  if (session && session.active) toast('La ruta sigue activa; el GPS continúa registrando.');
+  $('drvFecha').value = $('drvFecha').value || todayStr();
+  openView('v-drv');
+  if (!$('drvName').options.length) loadDrivers(); else loadDriverRoutes();
+}
+
+function stopState(s) {
+  const local = session && session.ruta_id === curRoute.ruta_id && session.done && session.done[s.seq];
+  return local ? { estado: local.estado, geocerca: local.geocerca, dist: local.dist, hora: local.hora, sync: local.sync }
+    : { estado: s.estado, geocerca: s.pod && s.pod.geocerca, dist: s.pod && s.pod.dist_destino_m, hora: s.pod && s.pod.hora_dispositivo, sync: true };
+}
+
+function renderRoute() {
+  const r = curRoute;
+  const active = session && session.active && session.ruta_id === r.ruta_id;
+  const finished = r.estado === 'FINALIZADA' || (session && session.ruta_id === r.ruta_id && session.finished);
+  const states = r.stops.map(stopState);
+  const done = states.filter(s => isDone(s.estado)).length;
+  $('rtTitle').textContent = 'Ruta ' + r.ruta;
+  $('rtSub').textContent = `${r.conductor}${r.placa ? ' · ' + r.placa : ''} · ${r.fecha}`;
+  const est = active ? 'EN_RUTA' : finished ? 'FINALIZADA' : r.estado;
+  $('rtEstado').className = 'badge b-' + est; $('rtEstado').textContent = ESTADO_LBL[est] || est;
+  const km = active || (session && session.ruta_id === r.ruta_id) ? session.km : Number(r.km_gps_dispositivo) || 0;
+  $('rtKm').innerHTML = `${km.toFixed(1)} <span>km</span>`;
+  $('rtKmPlan').textContent = fmtKm(r.km_plan);
+  $('rtProg').style.width = (r.stops.length ? done / r.stops.length * 100 : 0) + '%';
+  $('rtProgTxt').textContent = `${done}/${r.stops.length} paradas`;
+
+  if (active) {
+    $('rtActions').innerHTML = `<button class="btn btn-danger" onclick="endRoute()">🏁 Finalizar ruta</button>`;
+  } else if (finished) {
+    $('rtActions').innerHTML = `<div class="msg ok">Ruta finalizada.</div>`;
+  } else if (session && session.active) {
+    $('rtActions').innerHTML = `<div class="msg warn">Tienes otra ruta activa. Finalízala antes de iniciar esta.</div>`;
+  } else {
+    $('rtActions').innerHTML = `<button class="btn btn-primary" onclick="startRoute()">▶ Iniciar ruta (activa GPS)</button>`;
+  }
+
+  $('rtStops').innerHTML = r.stops.map((s, i) => {
+    const st = states[i];
+    const d = isDone(st.estado);
+    const lat = num(s.lat), lng = num(s.lng);
+    const nav = validCoord(lat, lng)
+      ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`
+      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.direccion)}&travelmode=driving`;
+    const canPod = active && (!d || st.estado === 'NO_ENTREGADO');
+    return `<div class="stop ${d ? 'done' : ''}">
+      <div class="stop-head">
+        <div class="seq">${d ? '✓' : esc(s.seq)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="spread"><div class="stop-name">${esc(s.cliente || s.pedido)}</div>${badge(st.estado)}</div>
+          <div class="muted">${esc(s.pedido)}${s.telefono ? ' · ' + esc(s.telefono) : ''}</div>
+          <div style="font-size:14px;margin-top:4px">${esc(s.direccion)}</div>
+          ${s.notas ? `<div class="muted" style="margin-top:4px">📝 ${esc(s.notas)}</div>` : ''}
+          ${d ? `<div class="muted" style="margin-top:6px">${hhmm(st.hora)} ${st.geocerca ? badge(st.geocerca) : ''} ${st.dist !== '' && st.dist != null ? st.dist + ' m del destino' : ''} ${st.sync ? '' : '· ⏳ por sincronizar'}</div>` : ''}
+        </div>
+      </div>
+      <div class="stop-actions">
+        <a class="btn btn-sm" href="${nav}" target="_blank">🧭 Navegar</a>
+        ${s.telefono ? `<a class="btn btn-sm" href="tel:${esc(String(s.telefono).replace(/[^0-9+]/g, ''))}">📞 Llamar</a>` : ''}
+        ${canPod ? `<button class="btn btn-sm btn-success" onclick="openPod(${i})">${d ? '↻ Reintentar' : '✍ Registrar entrega'}</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  renderGps(); renderSync();
+}
+
+function getPosition() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      p => resolve({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), acc: p.coords.accuracy, spd: p.coords.speed, t: p.timestamp }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
+  });
+}
+
+async function startRoute() {
+  if (session && session.active) return toast('Ya hay una ruta activa', true);
+  const pos = await getPosition();
+  if (!pos) {
+    if (!confirm('No se pudo obtener el GPS. Revisa que la ubicación esté activada y con permiso para este sitio.\n\n¿Iniciar de todas formas?')) return;
+  }
+  const r = curRoute;
+  session = { ruta_id: r.ruta_id, conductor: r.conductor, fecha: r.fecha, active: true, km: 0, last: null, lastStored: null, done: {}, inicio: Date.now() };
+  if (pos && pos.acc <= GPS_MAX_ACC_M) { session.last = pos; storePoint(pos); }
+  saveSession();
+  enqueue('startRoute', { ruta_id: r.ruta_id, conductor: r.conductor, hora: new Date().toISOString(), lat: pos ? pos.lat : '', lng: pos ? pos.lng : '' });
+  startWatch();
+  renderRoute();
+  toast('▶ Ruta iniciada. Mantén la app abierta para registrar los km.');
+}
+
+async function endRoute() {
+  const pend = curRoute.stops.map(stopState).filter(s => !isDone(s.estado)).length;
+  if (!confirm(pend ? `Quedan ${pend} parada(s) sin registrar. ¿Finalizar la ruta de todas formas?` : '¿Finalizar la ruta?')) return;
+  const pos = lastFix && Date.now() - lastFix.t < 60000 ? lastFix : await getPosition();
+  if (pos) onFix({ coords: { latitude: pos.lat, longitude: pos.lng, accuracy: pos.acc, speed: pos.spd }, timestamp: pos.t || Date.now() }, true);
+  flushTrack(true);
+  enqueue('endRoute', { ruta_id: session.ruta_id, km: session.km, hora: new Date().toISOString(), lat: pos ? pos.lat : '', lng: pos ? pos.lng : '' });
+  session.active = false; session.finished = true; saveSession();
+  curRoute.estado = 'FINALIZADA'; curRoute.km_gps_dispositivo = session.km;
+  LS.set('pod_routes', routesCache);
+  stopWatch();
+  renderRoute();
+  toast(`🏁 Ruta finalizada · ${session.km.toFixed(1)} km`);
+}
+
+// ---------- GPS ----------
+let watchId = null, lastFix = null, wakeLock = null, gpsErr = '';
+function startWatch() {
+  if (!navigator.geolocation) { gpsErr = 'Sin GPS en este dispositivo'; renderGps(); return; }
+  if (watchId != null) return;
+  watchId = navigator.geolocation.watchPosition(p => onFix(p), e => { gpsErr = e.code === 1 ? 'Permiso de ubicación denegado' : 'Sin señal GPS'; renderGps(); },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+  requestWake();
+}
+function stopWatch() {
+  if (watchId != null) navigator.geolocation.clearWatch(watchId);
+  watchId = null;
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+  renderGps();
+}
+async function requestWake() {
+  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && session && session.active) { requestWake(); sync(); }
+});
+
+function onFix(pos, force) {
+  const p = { lat: +pos.coords.latitude.toFixed(6), lng: +pos.coords.longitude.toFixed(6), acc: pos.coords.accuracy, spd: pos.coords.speed, t: pos.timestamp || Date.now() };
+  lastFix = p; gpsErr = '';
+  if (session && session.active && p.acc <= GPS_MAX_ACC_M) {
+    if (!session.last) { session.last = p; storePoint(p); }
+    else {
+      const d = haversineKm(session.last.lat, session.last.lng, p.lat, p.lng);
+      const h = (p.t - session.last.t) / 3600000;
+      if (d >= GPS_MIN_STEP_KM && !(h > 0 && d / h > GPS_MAX_KMH)) {
+        session.km += d;
+        session.last = p;
+        const ls = session.lastStored;
+        if (force || !ls || haversineKm(ls.lat, ls.lng, p.lat, p.lng) >= TRACK_STORE_KM || p.t - ls.t >= TRACK_STORE_MS) storePoint(p);
+      }
+    }
+    saveSession();
+    if ($('v-route').classList.contains('active') && curRoute && curRoute.ruta_id === session.ruta_id) {
+      $('rtKm').innerHTML = `${session.km.toFixed(1)} <span>km</span>`;
+    }
+  }
+  renderGps();
+  if ($('podModal').classList.contains('open')) renderPodGps();
+}
+function storePoint(p) {
+  trackBuf.push({ lat: p.lat, lng: p.lng, acc: Math.round(p.acc), spd: p.spd, t: new Date(p.t).toISOString() });
+  session.lastStored = { lat: p.lat, lng: p.lng, t: p.t };
+  LS.set('pod_trackbuf', trackBuf);
+}
+function flushTrack(force) {
+  if (!trackBuf.length || !session) return;
+  if (!force && trackBuf.length < 3 && !navigator.onLine) return;
+  queue.push({ id: Date.now().toString(36) + 't', action: 'track', payload: { ruta_id: session.ruta_id, conductor: session.conductor, puntos: trackBuf }, tries: 0 });
+  trackBuf = [];
+  saveQueue();
+}
+function renderGps() {
+  const el = $('rtGps');
+  if (!el) return;
+  if (gpsErr) { el.innerHTML = `<span style="color:var(--danger)">📡 ${esc(gpsErr)}</span>`; return; }
+  if (watchId == null) { el.textContent = '📡 GPS inactivo'; return; }
+  if (!lastFix) { el.textContent = '📡 Buscando señal…'; return; }
+  const good = lastFix.acc <= GPS_MAX_ACC_M;
+  el.innerHTML = `<span style="color:${good ? 'var(--success)' : 'var(--accent)'}">📡 ±${Math.round(lastFix.acc)} m</span>`;
+}
+
+// ---------- Prueba de entrega ----------
+let podStop = null, podEstado = '', podFoto = '', podPos = null, sigDirty = false;
+
+function openPod(i) {
+  podStop = curRoute.stops[i];
+  podEstado = ''; podFoto = ''; podPos = null;
+  $('podTitle').textContent = `#${podStop.seq} · ${podStop.cliente || podStop.pedido}`;
+  $('podSub').textContent = `${podStop.pedido} · ${podStop.direccion}`;
+  document.querySelectorAll('.estado-opt').forEach(b => b.classList.remove('sel'));
+  ['podMotivo', 'podReceptor', 'podComentario'].forEach(id => $(id).value = '');
+  $('podFotoPrev').style.display = 'none';
+  $('podErr').innerHTML = '';
+  $('fMotivo').style.display = 'none'; $('fReceptor').style.display = ''; $('fFirma').style.display = '';
+  $('podModal').classList.add('open');
+  setupSig(); clearSig();
+  renderPodGps();
+  getPosition().then(p => { if (p) { podPos = p; renderPodGps(); } else if (!lastFix) $('podGps').innerHTML = '<span style="color:var(--danger)">⚠ No se pudo obtener la ubicación. Activa el GPS.</span>'; });
+}
+function closePod() { $('podModal').classList.remove('open'); }
+
+function setEstado(btn) {
+  podEstado = btn.dataset.e;
+  document.querySelectorAll('.estado-opt').forEach(b => b.classList.toggle('sel', b === btn));
+  const ok = podEstado === 'ENTREGADO' || podEstado === 'PARCIAL';
+  $('fMotivo').style.display = ok && podEstado !== 'PARCIAL' ? 'none' : '';
+  $('fReceptor').style.display = ok ? '' : 'none';
+  $('fFirma').style.display = ok ? '' : 'none';
+  if (ok) setupSig();
+}
+
+function bestPos() {
+  const c = [podPos, lastFix].filter(p => p && Date.now() - p.t < 120000);
+  return c.sort((a, b) => a.acc - b.acc)[0] || null;
+}
+function renderPodGps() {
+  const p = bestPos();
+  if (!p) { $('podGps').textContent = '📡 Obteniendo ubicación…'; return; }
+  const lat = num(podStop.lat), lng = num(podStop.lng);
+  let line = `📍 ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)} · precisión ±${Math.round(p.acc)} m`;
+  if (validCoord(lat, lng)) {
+    const m = Math.round(haversineKm(lat, lng, p.lat, p.lng) * 1000);
+    line += m <= geocercaM
+      ? `<div style="color:var(--success);margin-top:4px">✅ A ${m} m del destino (dentro de la geocerca de ${geocercaM} m)</div>`
+      : `<div style="color:var(--danger);margin-top:4px">⚠ A ${m} m del destino: fuera de la geocerca de ${geocercaM} m. Se registrará como FUERA.</div>`;
+  } else {
+    line += `<div class="muted" style="margin-top:4px">La parada no tiene coordenadas de referencia.</div>`;
+  }
+  $('podGps').innerHTML = line;
+}
+
+$('podFoto').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    podFoto = await compressImage(f, 1024, 0.6);
+    $('podFotoPrev').src = podFoto; $('podFotoPrev').style.display = 'block';
+  } catch (err) { toast('No se pudo procesar la foto', true); }
+  e.target.value = '';
+});
+function compressImage(file, max, q) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL('image/jpeg', q));
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// Firma
+let sigCtx, sigDrawing = false;
+function setupSig() {
+  const c = $('sig');
+  const r = c.getBoundingClientRect();
+  if (!r.width) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (c.width === Math.round(r.width * dpr)) return;
+  c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
+  sigCtx = c.getContext('2d');
+  sigCtx.scale(dpr, dpr);
+  sigCtx.lineWidth = 2.2; sigCtx.lineCap = 'round'; sigCtx.lineJoin = 'round'; sigCtx.strokeStyle = '#111';
+  sigDirty = false; $('sigHint').style.display = '';
+}
+function clearSig() {
+  const c = $('sig');
+  if (sigCtx) { sigCtx.save(); sigCtx.setTransform(1, 0, 0, 1, 0, 0); sigCtx.clearRect(0, 0, c.width, c.height); sigCtx.restore(); }
+  sigDirty = false; $('sigHint').style.display = '';
+}
+(function () {
+  const c = $('sig');
+  const pt = e => { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  c.addEventListener('pointerdown', e => { setupSig(); sigDrawing = true; c.setPointerCapture(e.pointerId); const [x, y] = pt(e); sigCtx.beginPath(); sigCtx.moveTo(x, y); });
+  c.addEventListener('pointermove', e => { if (!sigDrawing) return; const [x, y] = pt(e); sigCtx.lineTo(x, y); sigCtx.stroke(); sigDirty = true; $('sigHint').style.display = 'none'; });
+  ['pointerup', 'pointercancel'].forEach(ev => c.addEventListener(ev, () => sigDrawing = false));
+})();
+
+function savePod() {
+  const err = [];
+  const ok = podEstado === 'ENTREGADO' || podEstado === 'PARCIAL';
+  const receptor = $('podReceptor').value.trim();
+  const motivo = $('podMotivo').value;
+  if (!podEstado) err.push('Selecciona el resultado de la visita.');
+  if (ok && !receptor) err.push('Escribe el nombre de quien recibe.');
+  if (ok && !sigDirty && !podFoto) err.push('Captura la firma o una foto de la entrega.');
+  if (!ok && podEstado && !motivo) err.push('Selecciona el motivo.');
+  if (!ok && podEstado && !podFoto) err.push('Toma una foto como evidencia (fachada / producto).');
+  const p = bestPos();
+  if (!p && !confirm('No hay ubicación GPS. ¿Guardar sin ubicación? (quedará marcado SIN_GPS)')) return;
+  if (err.length) { $('podErr').innerHTML = `<div class="msg err">${err.map(esc).join('<br>')}</div>`; return; }
+
+  const s = podStop;
+  const pod_id = `${curRoute.ruta_id}_${s.seq}_${Date.now().toString(36)}`;
+  let dist = '', geocerca = p ? 'SIN_REF' : 'SIN_GPS';
+  const lat = num(s.lat), lng = num(s.lng);
+  if (p && validCoord(lat, lng)) {
+    dist = Math.round(haversineKm(lat, lng, p.lat, p.lng) * 1000);
+    geocerca = dist <= geocercaM ? 'DENTRO' : 'FUERA';
+  }
+  const hora = new Date().toISOString();
+  const payload = {
+    pod_id, ruta_id: curRoute.ruta_id, seq: s.seq, conductor: curRoute.conductor,
+    estado: podEstado, motivo: ok && podEstado === 'ENTREGADO' ? '' : motivo, receptor: ok ? receptor : '',
+    comentario: $('podComentario').value.trim(),
+    lat: p ? p.lat : '', lng: p ? p.lng : '', acc: p ? p.acc : null,
+    km_acum: session ? session.km : null, hora,
+    foto: podFoto || '', firma: ok && sigDirty ? $('sig').toDataURL('image/png') : ''
+  };
+  session.done[s.seq] = { estado: podEstado, geocerca, dist, hora, sync: false };
+  saveSession();
+  if (p) onFix({ coords: { latitude: p.lat, longitude: p.lng, accuracy: p.acc, speed: p.spd }, timestamp: p.t }, true);
+  enqueue('pod', payload);
+  closePod();
+  renderRoute();
+  toast(geocerca === 'FUERA' ? `⚠ Guardado fuera de geocerca (${dist} m)` : '✅ Prueba de entrega guardada', geocerca === 'FUERA');
+}
+
+// ============================================================
+// INICIO
+// ============================================================
+(function init() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('api')) { cfg.api = q.get('api'); saveCfg(); }
+  renderSync();
+  if (session && session.active && routesCache[session.ruta_id]) { openRoute(session.ruta_id); }
+  else if (q.get('rol') === 'conductor' && cfg.api) enterDriver();
+  else openView('v-home');
+  sync();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+﻿fecha,ruta,conductor,placa,seq,pedido,cliente,direccion,telefono,lat,lng,notas
+2026-10-13,R01,Juan Pérez,C-123456,1,PED-0001,María López,"Col. Escalón, Calle Principal #123",7000-0001,13.7065,-89.2420,Portón negro
+2026-10-13,R01,Juan Pérez,C-123456,2,PED-0002,Carlos Ramírez,"Res. Santa Elena, Pje. 3 #45",7000-0002,,,Llamar antes
+2026-10-13,R02,Ana Martínez,C-654321,1,PED-0003,Tienda La Esquina,Av. Olímpica #800,7000-0003,13.6990,-89.2190,
